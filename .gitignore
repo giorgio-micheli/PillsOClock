@@ -1,0 +1,74 @@
+# ==========================
+# ANDROID BUILD
+# ==========================
+build/
+**/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ==========================
+# GRADLE
+# ==========================
+.gradle/
+local.properties
+
+# ==========================
+# ANDROID STUDIO / INTELLIJ
+# ==========================
+.idea/
+*.iml
+*.iws
+*.ipr
+captures/
+.navigation/
+
+# ==========================
+# KOTLIN
+# ==========================
+*.class
+*.kotlin_module
+
+# ==========================
+# KEYSTORE (SICUREZZA!)
+# ==========================
+*.jks
+*.keystore
+*.p12
+key.properties
+
+# ==========================
+# SISTEMA OPERATIVO
+# ==========================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ==========================
+# EDITOR VARI
+# ==========================
+*.swp
+*.swo
+.vscode/
+
+# ==========================
+# TEST & COVERAGE
+# ==========================
+*.hprof
+.cxx/
+
+# ==========================
+# FIREBASE / GOOGLE SERVICES
+# ==========================
+google-services.json
