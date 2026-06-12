@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -64,4 +65,8 @@ dependencies {
     // Room database
     implementation(libs.androidx.room.runtime)
 
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
