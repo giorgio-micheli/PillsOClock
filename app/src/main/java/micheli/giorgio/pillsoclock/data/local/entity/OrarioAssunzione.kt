@@ -28,7 +28,7 @@ data class OrarioAssunzione(
     val id: Int = 0,
 
     @ColumnInfo(name = "id_piano_assunzione")
-    val id_piano_assunzione: Int,
+    val idPianoAssunzione: Int,
 
     val orario: LocalTime
 )

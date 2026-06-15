@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 
 enum class TipoFrequenza {
     GIORNALIERA,
@@ -32,11 +33,14 @@ data class PianoAssunzione(
     val idMedicinale: Int,
 
     @ColumnInfo("tipo_frequenza")
-    val tipoFrequenza: Int,
+    val tipoFrequenza: TipoFrequenza,
 
     @ColumnInfo("intervallo_giorni")
     val intervalloGiorni: Int?,
 
     @ColumnInfo("giorni_settimana")
-    val giorniSettimana: String?
+    val giorniSettimana: String?,
+
+    @ColumnInfo("data_inizio")
+    val dataInizio: LocalDate
 )
