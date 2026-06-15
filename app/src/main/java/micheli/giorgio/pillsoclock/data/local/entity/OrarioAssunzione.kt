@@ -7,7 +7,10 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalTime
 
-
+/**
+ * Entità che rappresenta tutti gli orari per cui è stata programmata l'assunzione di un certo medicinale.
+ * Un medicinale può avere più orari di assunzione.
+ */
 @Entity(
     tableName = "orari_assunzioni",
     foreignKeys = [

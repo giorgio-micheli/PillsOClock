@@ -9,27 +9,29 @@ import micheli.giorgio.pillsoclock.data.local.entity.Medicinale
 import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.AssunzioneRepository
+import micheli.giorgio.pillsoclock.domain.MedicinaleRepository
 
 class MedicinaleRepository (
     private val medicinaleDao: MedicinaliDao,
     private val pianoAssunzioneDao: PianiAssunzioniDao,
     private val orarioAssunzioneDao: OrariAssunzioniDao
-) {
+): MedicinaleRepository {
     // --- lettura ---
 
-    fun getMedicinaliAttivi(idUtente: Int): Flow<List<Medicinale>> =
+    override fun getMedicinaliAttivi(idUtente: Int): Flow<List<Medicinale>> =
         medicinaleDao.getMedicinaliAttivi(idUtente)
 
-    fun getMedicinaleConPianoEOrari(id: Int): Flow<MedicinaleConPianoEOrari?> =
+    override fun getMedicinaleConPianoEOrari(id: Int): Flow<MedicinaleConPianoEOrari?> =
         medicinaleDao.getMedicinaleConPianoAssunzioneEOrari(id)
 
-    fun getMedicinaliAttiviConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>> =
+    override fun getMedicinaliAttiviConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>> =
         medicinaleDao.getMedicinaliAttiviConPianoEOrari(idUtente)
 
     // --- scrittura ---
 
     @Transaction
-    suspend fun inserisciMedicinaleConPianoEOrari(
+    override suspend fun inserisciMedicinaleConPianoEOrari(
         medicinale: Medicinale,
         piano: PianoAssunzione,
         orari: List<OrarioAssunzione>
@@ -44,7 +46,7 @@ class MedicinaleRepository (
     }
 
     @Transaction
-    suspend fun aggiornaPianoEOrari(
+    override suspend fun aggiornaPianoEOrari(
         piano: PianoAssunzione,
         nuoviOrari: List<OrarioAssunzione>
     ) {
@@ -55,9 +57,9 @@ class MedicinaleRepository (
         )
     }
 
-    suspend fun disattivaMedicinale(id: Int) =
+    override suspend fun disattivaMedicinale(id: Int) =
         medicinaleDao.disattiva(id)
 
-    suspend fun eliminaMedicinale(medicinale: Medicinale) =
+    override suspend fun eliminaMedicinale(medicinale: Medicinale) =
         medicinaleDao.delete(medicinale)
 }

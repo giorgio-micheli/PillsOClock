@@ -7,6 +7,9 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 
+/**
+ * Entità che rappresenta i medicinali che l'utente deve assumere
+ */
 @Entity(
     tableName = "medicinali",
     foreignKeys = [

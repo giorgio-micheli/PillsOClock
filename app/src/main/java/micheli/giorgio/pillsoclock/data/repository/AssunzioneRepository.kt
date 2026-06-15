@@ -9,6 +9,7 @@ import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.AssunzioneRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -16,18 +17,18 @@ import java.time.temporal.ChronoUnit
 class AssunzioneRepository (
     private val assunzionePrevistaDao: AssunzioniPrevisteDao,
     private val assunzioneEffettuataDao: AssunzioniEffettuateDao
-) {
+): AssunzioneRepository {
     // --- lettura ---
 
-    fun getAssunzioniPerGiorno(idUtente: Int, data: LocalDate) =
+    override fun getAssunzioniPerGiorno(idUtente: Int, data: LocalDate) =
         assunzioneEffettuataDao.getAssunzioniPrevisteConEffettuataPerGiorno(idUtente, data)
 
-    fun getGiorniConAssunzioni(idUtente: Int, dataInizio: LocalDate, dataFine: LocalDate) =
+    override fun getGiorniConAssunzioni(idUtente: Int, dataInizio: LocalDate, dataFine: LocalDate) =
         assunzionePrevistaDao.getGiorniConAssunzioni(idUtente, dataInizio, dataFine)
 
     // --- generazione giornaliera ---
 
-    suspend fun generaAssunzioniPerGiorno(
+    override suspend fun generaAssunzioniPerGiorno(
         idUtente: Int,
         data: LocalDate,
         medicinaliConPianoEOrari: List<MedicinaleConPianoEOrari>
@@ -48,7 +49,7 @@ class AssunzioneRepository (
         assunzionePrevistaDao.insertAll(assunzioniDaInserire)
     }
 
-    private fun isPianoAttivoInData(piano: PianoAssunzione, data: LocalDate): Boolean {
+    override fun isPianoAttivoInData(piano: PianoAssunzione, data: LocalDate): Boolean {
         return when (piano.tipoFrequenza) {
             TipoFrequenza.GIORNALIERA -> true
             TipoFrequenza.OGNI_N_GIORNI -> {
@@ -70,7 +71,7 @@ class AssunzioneRepository (
     // --- azione utente ---
 
     @Transaction
-    suspend fun registraAssunzione(assunzionePrevista: AssunzionePrevista, idUtente: Int) {
+    override suspend fun registraAssunzione(assunzionePrevista: AssunzionePrevista, idUtente: Int) {
         assunzioneEffettuataDao.insert(
             AssunzioneEffettuata(
                 idAssunzionePrevista = assunzionePrevista.id,
@@ -82,11 +83,11 @@ class AssunzioneRepository (
     }
 
     @Transaction
-    suspend fun annullaAssunzione(assunzionePrevista: AssunzionePrevista) {
+    override suspend fun annullaAssunzione(assunzionePrevista: AssunzionePrevista) {
         assunzioneEffettuataDao.deleteByPrevista(assunzionePrevista.id)
         assunzionePrevistaDao.aggiornaStato(assunzionePrevista.id, "IN_ATTESA")
     }
 
-    suspend fun segnaVecchieComeSaltate(idUtente: Int) =
+    override suspend fun segnaVecchieComeSaltate(idUtente: Int) =
         assunzionePrevistaDao.segnaVecchieComeSaltate(idUtente, LocalDate.now())
 }
