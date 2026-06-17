@@ -2,39 +2,39 @@ package micheli.giorgio.pillsoclock.data.local.entity.relations
 
 import androidx.room.Embedded
 import androidx.room.Relation
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuata
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevista
-import micheli.giorgio.pillsoclock.data.local.entity.Medicinale
-import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzione
-import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzione
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuataEntity
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevistaEntity
+import micheli.giorgio.pillsoclock.data.local.entity.MedicinaleEntity
+import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzioneEntity
+import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzioneEntity
 
-data class MedicinaleConPiano(
-    @Embedded val medicinale: Medicinale,
+data class MedicinaleConPianoEntity(
+    @Embedded val medicinale: MedicinaleEntity,
     @Relation(parentColumn = "id", entityColumn = "id_medicinale")
-    val piani: List<PianoAssunzione>
+    val piani: List<PianoAssunzioneEntity>
 )
 
-data class PianoConOrari(
-    @Embedded val piano: PianoAssunzione,
+data class PianoConOrariEntity(
+    @Embedded val piano: PianoAssunzioneEntity,
     @Relation(parentColumn = "id", entityColumn = "id_piano_assunzione")
-    val orari: List<OrarioAssunzione>
+    val orari: List<OrarioAssunzioneEntity>
 )
 
-data class MedicinaleConPianoEOrari(
-    @Embedded val medicinale: Medicinale,
+data class MedicinaleConPianoEOrariEntity(
+    @Embedded val medicinale: MedicinaleEntity,
     @Relation(
         parentColumn = "id",
         entityColumn = "id_medicinale",
-        entity = PianoAssunzione::class
+        entity = PianoAssunzioneEntity::class
     )
-    val piani: List<PianoConOrari>
+    val piani: List<PianoConOrariEntity>
 )
 
-data class AssunzionePrevistaConEffettuata(
-    @Embedded val assunzionePrevista: AssunzionePrevista,
+data class AssunzionePrevistaConEffettuataEntity(
+    @Embedded val assunzionePrevista: AssunzionePrevistaEntity,
     @Relation(
         parentColumn = "id",
         entityColumn = "id_assunzione_prevista"
     )
-    val assunzioneEffettuata: AssunzioneEffettuata?
+    val assunzioneEffettuata: AssunzioneEffettuataEntity?
 )

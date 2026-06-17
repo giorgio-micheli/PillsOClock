@@ -1,10 +1,13 @@
-package micheli.giorgio.pillsoclock.domain
+package micheli.giorgio.pillsoclock.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import micheli.giorgio.pillsoclock.data.local.entity.Medicinale
-import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzione
-import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzione
-import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.data.local.entity.MedicinaleEntity
+import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzioneEntity
+import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzioneEntity
+import micheli.giorgio.pillsoclock.domain.models.Medicinale
+import micheli.giorgio.pillsoclock.domain.models.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.models.OrarioAssunzione
+import micheli.giorgio.pillsoclock.domain.models.PianoAssunzione
 
 interface MedicinaleRepository {
 

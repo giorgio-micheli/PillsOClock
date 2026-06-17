@@ -28,7 +28,7 @@ enum class TipoFrequenza {
     tableName = "piani_assunzioni",
     foreignKeys = [
         ForeignKey(
-            entity = Medicinale::class,
+            entity = MedicinaleEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_medicinale"],
             onDelete = ForeignKey.CASCADE
@@ -36,7 +36,7 @@ enum class TipoFrequenza {
     ],
     indices = [Index("id_medicinale")]
 )
-data class PianoAssunzione(
+data class PianoAssunzioneEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 

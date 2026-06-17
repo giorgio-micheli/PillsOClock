@@ -15,7 +15,7 @@ import java.time.LocalTime
     tableName = "orari_assunzioni",
     foreignKeys = [
         ForeignKey(
-            entity = PianoAssunzione::class,
+            entity = PianoAssunzioneEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_piano_assunzione"],
             onDelete = ForeignKey.CASCADE
@@ -26,7 +26,7 @@ import java.time.LocalTime
         Index(value = ["id_piano_assunzione", "orario"], unique = true)
     ]
 )
-data class OrarioAssunzione(
+data class OrarioAssunzioneEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 

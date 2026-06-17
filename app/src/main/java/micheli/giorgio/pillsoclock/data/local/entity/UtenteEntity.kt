@@ -11,7 +11,7 @@ import java.time.LocalDateTime
  * applicazione.
  */
 @Entity(tableName = "utenti")
-data class Utente(
+data class UtenteEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
 

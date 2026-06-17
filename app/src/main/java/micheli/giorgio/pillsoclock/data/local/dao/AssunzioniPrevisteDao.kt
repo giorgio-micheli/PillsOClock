@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevista
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevistaEntity
 import java.time.LocalDate
 
 @Dao
@@ -18,13 +18,13 @@ interface AssunzioniPrevisteDao {
             "(SELECT id FROM orari_assunzioni WHERE id_piano_assunzione IN " +
             "(SELECT id FROM piani_assunzioni WHERE id_medicinale IN " +
             "(SELECT id FROM medicinali WHERE id_utente = :idUtente))) ORDER BY orario_previsto ASC")
-    fun getAssunzioniPrevistePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzionePrevista>>
+    fun getAssunzioniPrevistePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzionePrevistaEntity>>
 
     @Query("SELECT * FROM assunzioni_previste WHERE data = :data AND stato = 'IN_ATTESA' AND id_orario_assunzione IN " +
             "(SELECT id FROM orari_assunzioni WHERE id_piano_assunzione IN " +
             "(SELECT id FROM piani_assunzioni WHERE id_medicinale IN " +
             "(SELECT id FROM medicinali WHERE id_utente = :idUtente))) ORDER BY orario_previsto ASC")
-    fun getAssunzioniInAttesaPerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzionePrevista>>
+    fun getAssunzioniInAttesaPerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzionePrevistaEntity>>
 
     // --- query per lo storico ---
 
@@ -37,16 +37,16 @@ interface AssunzioniPrevisteDao {
     // --- query di servizio per la generazione giornaliera ---
 
     @Query("SELECT * FROM assunzioni_previste WHERE id_orario_assunzione = :idOrarioAssunzione AND data = :data")
-    suspend fun getAssunzionePrevistaByOrarioEData(idOrarioAssunzione: Int, data: LocalDate): AssunzionePrevista?
+    suspend fun getAssunzionePrevistaByOrarioEData(idOrarioAssunzione: Int, data: LocalDate): AssunzionePrevistaEntity?
 
     @Query("SELECT * FROM assunzioni_previste WHERE id = :id")
-    fun getAssunzionePrevistaById(id: Int): Flow<AssunzionePrevista?>
+    fun getAssunzionePrevistaById(id: Int): Flow<AssunzionePrevistaEntity?>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insert(assunzionePrevista: AssunzionePrevista): Long
+    suspend fun insert(assunzionePrevista: AssunzionePrevistaEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertAll(assunzioni: List<AssunzionePrevista>): List<Long>
+    suspend fun insertAll(assunzioni: List<AssunzionePrevistaEntity>): List<Long>
 
     @Query("UPDATE assunzioni_previste SET stato = :stato WHERE id = :id")
     suspend fun aggiornaStato(id: Int, stato: String)
@@ -58,5 +58,5 @@ interface AssunzioniPrevisteDao {
     suspend fun segnaVecchieComeSaltate(idUtente: Int, oggi: LocalDate)
 
     @Delete
-    suspend fun delete(assunzionePrevista: AssunzionePrevista)
+    suspend fun delete(assunzionePrevista: AssunzionePrevistaEntity)
 }

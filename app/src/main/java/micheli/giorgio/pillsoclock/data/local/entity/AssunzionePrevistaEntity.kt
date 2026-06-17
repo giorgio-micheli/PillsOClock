@@ -18,7 +18,7 @@ enum class StatoAssunzione {
     tableName = "assunzioni_previste",
     foreignKeys = [
         ForeignKey(
-            entity = OrarioAssunzione::class,
+            entity = OrarioAssunzioneEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_orario_assunzione"],
             onDelete = ForeignKey.CASCADE
@@ -29,7 +29,7 @@ enum class StatoAssunzione {
         Index(value = ["id_orario_assunzione", "data"], unique = true)
     ]
 )
-data class AssunzionePrevista(
+data class AssunzionePrevistaEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 

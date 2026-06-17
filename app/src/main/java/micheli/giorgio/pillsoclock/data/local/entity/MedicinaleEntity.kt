@@ -14,7 +14,7 @@ import java.time.LocalDateTime
     tableName = "medicinali",
     foreignKeys = [
         ForeignKey(
-            entity = Utente::class,
+            entity = UtenteEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_utente"],
             onDelete = ForeignKey.CASCADE
@@ -24,7 +24,7 @@ import java.time.LocalDateTime
         Index("id_utente")
     ]
 )
-data class Medicinale(
+data class MedicinaleEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
@@ -40,5 +40,5 @@ data class Medicinale(
     val dataInizio: LocalDateTime,
 
     @ColumnInfo("data_fine")
-    val dataFine: LocalDateTime
+    val dataFine: LocalDateTime?
 )

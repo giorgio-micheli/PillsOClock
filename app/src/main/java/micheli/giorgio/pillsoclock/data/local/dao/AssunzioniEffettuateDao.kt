@@ -7,8 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuata
-import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzionePrevistaConEffettuata
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuataEntity
+import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzionePrevistaConEffettuataEntity
 import java.time.LocalDate
 
 @Dao
@@ -17,7 +17,7 @@ interface AssunzioniEffettuateDao {
     // --- query per la home ---
 
     @Query("SELECT * FROM assunzioni_effettuate WHERE id_assunzione_prevista = :idAssunzionePrevista")
-    fun getAssunzioneEffettuataByPrevista(idAssunzionePrevista: Int): Flow<AssunzioneEffettuata?>
+    fun getAssunzioneEffettuataByPrevista(idAssunzionePrevista: Int): Flow<AssunzioneEffettuataEntity?>
 
     // --- query per lo storico ---
 
@@ -27,7 +27,7 @@ interface AssunzioniEffettuateDao {
         WHERE ap.data = :data AND ae.id_utente = :idUtente
         ORDER BY ae.timestamp_assunzione ASC
     """)
-    fun getAssunzioniEffettuatePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzioneEffettuata>>
+    fun getAssunzioniEffettuatePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzioneEffettuataEntity>>
 
     @Transaction
     @Query("""
@@ -41,15 +41,15 @@ interface AssunzioniEffettuateDao {
     fun getAssunzioniPrevisteConEffettuataPerGiorno(
         idUtente: Int,
         data: LocalDate
-    ): Flow<List<AssunzionePrevistaConEffettuata>>
+    ): Flow<List<AssunzionePrevistaConEffettuataEntity>>
 
     // --- scrittura ---
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insert(assunzioneEffettuata: AssunzioneEffettuata): Long
+    suspend fun insert(assunzioneEffettuata: AssunzioneEffettuataEntity): Long
 
     @Delete
-    suspend fun delete(assunzioneEffettuata: AssunzioneEffettuata)
+    suspend fun delete(assunzioneEffettuata: AssunzioneEffettuataEntity)
 
     @Query("DELETE FROM assunzioni_effettuate WHERE id_assunzione_prevista = :idAssunzionePrevista")
     suspend fun deleteByPrevista(idAssunzionePrevista: Int)

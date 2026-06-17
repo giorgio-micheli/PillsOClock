@@ -11,13 +11,13 @@ import java.time.LocalDateTime
     tableName = "assunzioni_effettuate",
     foreignKeys = [
         ForeignKey(
-            entity = AssunzionePrevista::class,
+            entity = AssunzionePrevistaEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_assunzione_prevista"],
             onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
-            entity = Utente::class,
+            entity = UtenteEntity::class,
             parentColumns = ["id"],
             childColumns = ["id_utente"],
             onDelete = ForeignKey.CASCADE
@@ -28,7 +28,7 @@ import java.time.LocalDateTime
         Index(value = ["id_utente"])
     ]
 )
-data class AssunzioneEffettuata(
+data class AssunzioneEffettuataEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 

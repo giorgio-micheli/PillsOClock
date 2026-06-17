@@ -11,22 +11,22 @@ import micheli.giorgio.pillsoclock.data.local.dao.MedicinaliDao
 import micheli.giorgio.pillsoclock.data.local.dao.OrariAssunzioniDao
 import micheli.giorgio.pillsoclock.data.local.dao.PianiAssunzioniDao
 import micheli.giorgio.pillsoclock.data.local.dao.UtentiDao
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuata
-import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevista
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuataEntity
+import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevistaEntity
 import micheli.giorgio.pillsoclock.data.local.entity.Converters
-import micheli.giorgio.pillsoclock.data.local.entity.Medicinale
-import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzione
-import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzione
-import micheli.giorgio.pillsoclock.data.local.entity.Utente
+import micheli.giorgio.pillsoclock.data.local.entity.MedicinaleEntity
+import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzioneEntity
+import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzioneEntity
+import micheli.giorgio.pillsoclock.data.local.entity.UtenteEntity
 
 @Database(
     entities = [
-        Utente::class,
-        Medicinale::class,
-        PianoAssunzione::class,
-        OrarioAssunzione::class,
-        AssunzionePrevista::class,
-        AssunzioneEffettuata::class
+        UtenteEntity::class,
+        MedicinaleEntity::class,
+        PianoAssunzioneEntity::class,
+        OrarioAssunzioneEntity::class,
+        AssunzionePrevistaEntity::class,
+        AssunzioneEffettuataEntity::class
     ],
     version = 1,
     exportSchema = true
