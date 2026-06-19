@@ -1,11 +1,12 @@
 package micheli.giorgio.pillsoclock.data.local.mapper
 
-import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzionePrevistaConEffettuataEntity
+import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzioneGiornalieraEntity
 import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrariEntity
 import micheli.giorgio.pillsoclock.data.local.entity.relations.PianoConOrariEntity
-import micheli.giorgio.pillsoclock.domain.models.AssunzionePrevistaConEffettuata
-import micheli.giorgio.pillsoclock.domain.models.MedicinaleConPianoEOrari
-import micheli.giorgio.pillsoclock.domain.models.PianoConOrari
+import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
+import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevistaConEffettuata
+import micheli.giorgio.pillsoclock.domain.model.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.model.PianoConOrari
 
 /*
     Mapper da Entity verso Domain, perchè queste Entity sono di sola lettura.
@@ -21,8 +22,10 @@ fun MedicinaleConPianoEOrariEntity.toDomain(): MedicinaleConPianoEOrari = Medici
     piani = piani.map { it.toDomain() }
 )
 
-fun AssunzionePrevistaConEffettuataEntity.toDomain(): AssunzionePrevistaConEffettuata =
-    AssunzionePrevistaConEffettuata(
+fun AssunzioneGiornalieraEntity.toDomain(): AssunzioneGiornaliera =
+    AssunzioneGiornaliera(
         assunzionePrevista = assunzionePrevista.toDomain(),
-        assunzioneEffettuata = assunzioneEffettuata?.toDomain()
+        assunzioneEffettuata = assunzioneEffettuata?.toDomain(),
+        nomeMedicinale = nomeMedicinale,
+        dosaggio = dosaggio
     )

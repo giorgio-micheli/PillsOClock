@@ -1,7 +1,7 @@
 package micheli.giorgio.pillsoclock.data.local.mapper
 
 import micheli.giorgio.pillsoclock.data.local.entity.MedicinaleEntity
-import micheli.giorgio.pillsoclock.domain.models.Medicinale
+import micheli.giorgio.pillsoclock.domain.model.Medicinale
 
 fun MedicinaleEntity.toDomain(): Medicinale = Medicinale(
     id = id,

@@ -1,7 +1,7 @@
 package micheli.giorgio.pillsoclock.data.local.mapper
 
 import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevistaEntity
-import micheli.giorgio.pillsoclock.domain.models.AssunzionePrevista
+import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
 
 fun AssunzionePrevistaEntity.toDomain(): AssunzionePrevista = AssunzionePrevista(
     id = id,

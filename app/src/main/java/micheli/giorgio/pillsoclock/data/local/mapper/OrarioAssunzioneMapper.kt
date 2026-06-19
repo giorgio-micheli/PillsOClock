@@ -1,7 +1,7 @@
 package micheli.giorgio.pillsoclock.data.local.mapper
 
 import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzioneEntity
-import micheli.giorgio.pillsoclock.domain.models.OrarioAssunzione
+import micheli.giorgio.pillsoclock.domain.model.OrarioAssunzione
 
 fun OrarioAssunzioneEntity.toDomain(): OrarioAssunzione = OrarioAssunzione(
     id = id,

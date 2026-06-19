@@ -18,8 +18,6 @@ import micheli.giorgio.pillsoclock.ui.theme.PillsOClockTheme
 
 class MainActivity : ComponentActivity() {
 
-    val homeViewModel: HomeViewModel = HomeViewModel()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -27,8 +25,7 @@ class MainActivity : ComponentActivity() {
             PillsOClockTheme {
                 Scaffold { innerPadding ->
                     HomeScreen(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding),
-                        viewModel = homeViewModel
+                        modifier = Modifier.fillMaxSize().padding(innerPadding)
                     )
                 }
             }

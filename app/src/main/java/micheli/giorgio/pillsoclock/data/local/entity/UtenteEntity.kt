@@ -3,6 +3,7 @@ package micheli.giorgio.pillsoclock.data.local.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -19,5 +20,5 @@ data class UtenteEntity(
     val email: String,
 
     @ColumnInfo("data_registrazione")
-    val dataRegistrazione: LocalDateTime
+    val dataRegistrazione: LocalDate
 )

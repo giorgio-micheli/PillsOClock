@@ -64,6 +64,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     // Room database
     implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    // opzionale ma quasi sempre utile, per le funzioni suspend/Flow nei DAO
+    implementation(libs.androidx.room.ktx)
 
 }
 

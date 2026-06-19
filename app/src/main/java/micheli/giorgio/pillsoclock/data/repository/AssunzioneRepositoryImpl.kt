@@ -6,14 +6,12 @@ import micheli.giorgio.pillsoclock.data.local.dao.AssunzioniEffettuateDao
 import micheli.giorgio.pillsoclock.data.local.dao.AssunzioniPrevisteDao
 import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuataEntity
 import micheli.giorgio.pillsoclock.data.local.entity.AssunzionePrevistaEntity
-import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzioneEntity
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
-import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrariEntity
 import micheli.giorgio.pillsoclock.data.local.mapper.toDomain
-import micheli.giorgio.pillsoclock.domain.models.AssunzionePrevista
-import micheli.giorgio.pillsoclock.domain.models.MedicinaleConPianoEOrari
-import micheli.giorgio.pillsoclock.domain.models.PianoAssunzione
+import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
+import micheli.giorgio.pillsoclock.domain.model.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.model.PianoAssunzione
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -25,8 +23,8 @@ class AssunzioneRepositoryImpl (
 ): AssunzioneRepository {
     // --- lettura ---
 
-    override fun getAssunzioniPerGiorno(idUtente: Int, data: LocalDate) =
-        assunzioneEffettuataDao.getAssunzioniPrevisteConEffettuataPerGiorno(idUtente, data)
+    override fun getAssunzioniGiornaliere(idUtente: Int, data: LocalDate) =
+        assunzioneEffettuataDao.getAssunzioniGiornaliere(idUtente, data)
             .map { assunzioni -> assunzioni.map { it.toDomain() } }
 
 

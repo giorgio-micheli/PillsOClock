@@ -6,16 +6,12 @@ import kotlinx.coroutines.flow.map
 import micheli.giorgio.pillsoclock.data.local.dao.MedicinaliDao
 import micheli.giorgio.pillsoclock.data.local.dao.OrariAssunzioniDao
 import micheli.giorgio.pillsoclock.data.local.dao.PianiAssunzioniDao
-import micheli.giorgio.pillsoclock.data.local.entity.MedicinaleEntity
-import micheli.giorgio.pillsoclock.data.local.entity.OrarioAssunzioneEntity
-import micheli.giorgio.pillsoclock.data.local.entity.PianoAssunzioneEntity
-import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPianoEOrariEntity
 import micheli.giorgio.pillsoclock.data.local.mapper.toDomain
 import micheli.giorgio.pillsoclock.data.local.mapper.toEntity
-import micheli.giorgio.pillsoclock.domain.models.Medicinale
-import micheli.giorgio.pillsoclock.domain.models.MedicinaleConPianoEOrari
-import micheli.giorgio.pillsoclock.domain.models.OrarioAssunzione
-import micheli.giorgio.pillsoclock.domain.models.PianoAssunzione
+import micheli.giorgio.pillsoclock.domain.model.Medicinale
+import micheli.giorgio.pillsoclock.domain.model.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.model.OrarioAssunzione
+import micheli.giorgio.pillsoclock.domain.model.PianoAssunzione
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
 
 class MedicinaleRepositoryImpl (

@@ -8,7 +8,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import micheli.giorgio.pillsoclock.data.local.entity.AssunzioneEffettuataEntity
-import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzionePrevistaConEffettuataEntity
+import micheli.giorgio.pillsoclock.data.local.entity.relations.AssunzioneGiornalieraEntity
 import java.time.LocalDate
 
 @Dao
@@ -31,17 +31,18 @@ interface AssunzioniEffettuateDao {
 
     @Transaction
     @Query("""
-        SELECT ap.* FROM assunzioni_previste ap
+        SELECT ap.*, m.nome AS nomeMedicinale, m.dosaggio AS dosaggio 
+        FROM assunzioni_previste ap
         INNER JOIN orari_assunzioni oa ON ap.id_orario_assunzione = oa.id
         INNER JOIN piani_assunzioni pa ON oa.id_piano_assunzione = pa.id
         INNER JOIN medicinali m ON pa.id_medicinale = m.id
         WHERE ap.data = :data AND m.id_utente = :idUtente
         ORDER BY ap.orario_previsto ASC
     """)
-    fun getAssunzioniPrevisteConEffettuataPerGiorno(
+    fun getAssunzioniGiornaliere(
         idUtente: Int,
         data: LocalDate
-    ): Flow<List<AssunzionePrevistaConEffettuataEntity>>
+    ): Flow<List<AssunzioneGiornalieraEntity>>
 
     // --- scrittura ---
 

@@ -30,11 +30,13 @@ data class MedicinaleConPianoEOrariEntity(
     val piani: List<PianoConOrariEntity>
 )
 
-data class AssunzionePrevistaConEffettuataEntity(
+data class AssunzioneGiornalieraEntity(
     @Embedded val assunzionePrevista: AssunzionePrevistaEntity,
     @Relation(
         parentColumn = "id",
         entityColumn = "id_assunzione_prevista"
     )
-    val assunzioneEffettuata: AssunzioneEffettuataEntity?
+    val assunzioneEffettuata: AssunzioneEffettuataEntity?,
+    val nomeMedicinale: String,
+    val dosaggio: String?
 )

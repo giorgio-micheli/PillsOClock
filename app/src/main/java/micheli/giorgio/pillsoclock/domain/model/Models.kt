@@ -1,4 +1,4 @@
-package micheli.giorgio.pillsoclock.domain.models
+package micheli.giorgio.pillsoclock.domain.model
 
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
@@ -62,4 +62,11 @@ data class MedicinaleConPianoEOrari(
 data class AssunzionePrevistaConEffettuata(
     val assunzionePrevista: AssunzionePrevista,
     val assunzioneEffettuata: AssunzioneEffettuata?
+)
+
+data class AssunzioneGiornaliera(
+    val assunzionePrevista: AssunzionePrevista,
+    val assunzioneEffettuata: AssunzioneEffettuata?,
+    val nomeMedicinale: String,
+    val dosaggio: String?
 )
