@@ -13,8 +13,8 @@ data class Medicinale(
     val dosaggio: String?,
     val note: String?,
     val attivo: Boolean,
-    val dataInizio: LocalDateTime,
-    val dataFine: LocalDateTime?
+    val dataInizio: LocalDate,
+    val dataFine: LocalDate?
 )
 
 data class PianoAssunzione(

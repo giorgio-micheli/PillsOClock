@@ -34,6 +34,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -56,21 +57,26 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
 import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
-import micheli.giorgio.pillsoclock.ui.addMedicine.AddMedicinaleBottomSheet
+import micheli.giorgio.pillsoclock.ui.addMedicine.AggiungiMedicinaleUiState
+import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAddMedicineButtonClick: () -> Unit,
+    onUserSettingsButtonClick: () -> Unit
 ) {
 
     val context = LocalContext.current
@@ -120,7 +126,9 @@ fun HomeScreen(
 
     Home(
         modifier = modifier,
-        uiState.assunzioni
+        uiState.assunzioni,
+        onAddMedicineButtonClick = onAddMedicineButtonClick,
+        onUserSettingsButtonClick = onUserSettingsButtonClick
     )
 }
 
@@ -164,20 +172,10 @@ fun ErrorScreen(
 @Composable
 fun Home(
     modifier: Modifier = Modifier,
-    assunzioniGiornaliere: List<AssunzioneGiornaliera>
+    assunzioniGiornaliere: List<AssunzioneGiornaliera>,
+    onAddMedicineButtonClick: () -> Unit,
+    onUserSettingsButtonClick: () -> Unit
 ) {
-
-    var showAddDialog by rememberSaveable { mutableStateOf(false)}
-
-    if (showAddDialog) {
-        AddMedicinaleBottomSheet(
-            onDismissRequest = {
-                showAddDialog = false
-            },
-            onSaveAndExit = {}
-        )
-    }
-
     Column(
         modifier = modifier.padding(horizontal = 10.dp).padding(top = 20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -200,16 +198,20 @@ fun Home(
                     fontWeight = FontWeight.Bold
                 )
             }
-            Icon(
+            IconButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    )
-                    .padding(8.dp),
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Account"
-            )
+                    .background(color = MaterialTheme.colorScheme.primary),
+                onClick = dropUnlessResumed {
+                    onUserSettingsButtonClick()
+                }
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Account"
+                )
+            }
         }
 
         Row(
@@ -230,9 +232,7 @@ fun Home(
             Chip(
                 icon = Icons.Default.Add,
                 text = "Aggiungi",
-                onClick = {
-                    showAddDialog = true
-                }
+                onClick = onAddMedicineButtonClick
             )
         }
 
@@ -323,15 +323,14 @@ fun Chip(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier
-            .clickable {
-                onClick()
-            },
+        onClick = dropUnlessResumed {
+            onClick()
+        },
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
-            modifier = Modifier.padding(vertical = 6.dp, horizontal = 14.dp),
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -354,7 +353,8 @@ fun MedicineCard(
     assunzioneGiornaliera: AssunzioneGiornaliera
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp)),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
@@ -372,22 +372,27 @@ fun MedicineCard(
                 Icon(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.primary)
                         .padding(12.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     imageVector = Icons.Outlined.Notifications,
                     contentDescription = "clock"
                 )
-                Column() {
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
                         text = assunzioneGiornaliera.nomeMedicinale,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "${assunzioneGiornaliera.assunzionePrevista.orarioPrevisto.format(
                             DateTimeFormatter.ofPattern("HH:mm"))}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -395,14 +400,17 @@ fun MedicineCard(
 
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(vertical = 6.dp, horizontal = 10.dp),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    ,
                 contentAlignment = Alignment.Center
             ) {
                 Text(
+                    modifier = Modifier
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
                     text = "Prendi",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
         }
@@ -412,39 +420,75 @@ fun MedicineCard(
 @Preview
 @Composable
 fun MedicineCardPreview() {
-    MedicineCard(
-        assunzioneGiornaliera = AssunzioneGiornaliera(
-            AssunzionePrevista(
-                1,
-                2,
-                LocalDate.now(),
-                LocalTime.now(),
-                StatoAssunzione.IN_ATTESA
-            ),
-            null,
-            "Omeprazolo",
-            "1 compressa"
+    AppTheme {
+        MedicineCard(
+            assunzioneGiornaliera = AssunzioneGiornaliera(
+                AssunzionePrevista(
+                    1,
+                    2,
+                    LocalDate.now(),
+                    LocalTime.now(),
+                    StatoAssunzione.IN_ATTESA
+                ),
+                null,
+                "Omeprazolo",
+                "1 compressa"
+            )
         )
-    )
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HomeScreenPreview() {
-    Scaffold { innerPadding ->
-        Home(
-            modifier = Modifier.padding(innerPadding),
-            emptyList()
-        )
+    AppTheme {
+        Scaffold { innerPadding ->
+            Home(
+                modifier = Modifier.padding(innerPadding),
+                emptyList(),
+                {},
+                {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomeScreenFullPreview() {
+    AppTheme {
+        Scaffold { innerPadding ->
+            Home(
+                modifier = Modifier.padding(innerPadding),
+                listOf(
+                    AssunzioneGiornaliera(
+                        AssunzionePrevista(
+                            1,
+                            1,
+                            LocalDate.now(),
+                            LocalTime.now(),
+                            StatoAssunzione.IN_ATTESA
+                        ),
+                        null,
+                        "Omeprazolo",
+                        null
+                    )
+                ),
+                {},
+                {}
+            )
+        }
     }
 }
 
 @Preview
 @Composable
 fun ChipPreview() {
-    Chip(
-        icon = Icons.Default.Info,
-        text = "Aggiungi",
-        onClick = {}
-    )
+    AppTheme {
+        Chip(
+            icon = Icons.Default.Info,
+            text = "Aggiungi",
+            onClick = {}
+        )
+    }
 }

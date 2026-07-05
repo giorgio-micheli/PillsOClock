@@ -2,12 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 android {
     namespace = "micheli.giorgio.pillsoclock"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -67,7 +68,14 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     // opzionale ma quasi sempre utile, per le funzioni suspend/Flow nei DAO
     implementation(libs.androidx.room.ktx)
-
+    // Navigation 3 libraries
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    // Kotlinx serialization
+    implementation(libs.kotlinx.serialization.core)
+    // Workmanager, componente di Jetpack
+    implementation(libs.androidx.work.runtime.ktx)
 }
 
 ksp {

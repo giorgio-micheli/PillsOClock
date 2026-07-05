@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -37,8 +38,8 @@ data class MedicinaleEntity(
     val attivo: Boolean,
 
     @ColumnInfo("data_inizio")
-    val dataInizio: LocalDateTime,
+    val dataInizio: LocalDate,
 
     @ColumnInfo("data_fine")
-    val dataFine: LocalDateTime?
+    val dataFine: LocalDate?
 )

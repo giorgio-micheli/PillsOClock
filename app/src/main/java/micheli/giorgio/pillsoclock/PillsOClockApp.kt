@@ -1,6 +1,13 @@
 package micheli.giorgio.pillsoclock
 
 import android.app.Application
+import androidx.work.Configuration
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -9,11 +16,16 @@ import micheli.giorgio.pillsoclock.data.local.AppDatabase
 import micheli.giorgio.pillsoclock.data.repository.AssunzioneRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.MedicinaleRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.UtenteRepositoryImpl
+import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorker
+import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorkerFactory
 import micheli.giorgio.pillsoclock.domain.model.Utente
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 
 /**
  * Application è una classe base di Android che rappresenta lo stato globale dell'app.
@@ -36,7 +48,7 @@ import java.time.LocalDate
  * ogni Context in Android mantiene un riferimento al Context dell'applicazione che lo contiene.
  */
 
-class PillsOClockApp : Application() {
+class PillsOClockApp : Application(), Configuration.Provider {
 
     val database: AppDatabase by lazy {
         AppDatabase.getInstance(this)
@@ -61,9 +73,23 @@ class PillsOClockApp : Application() {
         )
     }
 
+    // Configuration.Provider richiede di sovrascrivere workManagerConfiguration
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(
+                GeneraAssunzioniWorkerFactory(
+                    medicinaleRepository,
+                    assunzioneRepository,
+                    utenteRepository
+                )
+            )
+            .build()
+
     override fun onCreate() {
         super.onCreate()
         inizializzaUtente()
+        pianificaGenerazioneGiornaliera()
+        eseguiGenerazioneImmediata()
     }
 
     private fun inizializzaUtente() {
@@ -75,5 +101,38 @@ class PillsOClockApp : Application() {
                 )
             }
         }
+    }
+
+    private fun pianificaGenerazioneGiornaliera() {
+        // calcola i minuti mancanti alla mezzanotte
+        val adesso = LocalDateTime.now()
+        val mezzanotte = adesso.toLocalDate().plusDays(1).atStartOfDay()
+        val minutiAllaMezzanotte = ChronoUnit.MINUTES.between(adesso, mezzanotte)
+
+        val requestPeriodica = PeriodicWorkRequestBuilder<GeneraAssunzioniWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(minutiAllaMezzanotte, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiresBatteryNotLow(false)
+                    .build()
+            )
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "genera_assunzioni_giornaliere",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            requestPeriodica
+        )
+    }
+
+    private fun eseguiGenerazioneImmediata() {
+        val requestImmediata = OneTimeWorkRequestBuilder<GeneraAssunzioniWorker>()
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "genera_assunzioni_immediata",
+            ExistingWorkPolicy.KEEP, // se è già in coda o in esecuzione non la riesegue
+            requestImmediata
+        )
     }
 }
