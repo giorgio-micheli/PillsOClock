@@ -1,33 +1,40 @@
 package micheli.giorgio.pillsoclock.ui.home
 
-import android.graphics.Paint
-import android.graphics.drawable.Icon
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,15 +43,20 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,28 +67,37 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
 import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
-import micheli.giorgio.pillsoclock.ui.addMedicine.AggiungiMedicinaleUiState
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private const val DURATA_CHECK_MS = 600L
+private const val DURATA_COLLASSO_MS = 300
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     onAddMedicineButtonClick: () -> Unit,
-    onUserSettingsButtonClick: () -> Unit
+    onUserSettingsButtonClick: () -> Unit,
+    onFrequenzaButtonClick: () -> Unit,
+    onMedicinaliButtonClick: () -> Unit
 ) {
 
     val context = LocalContext.current
@@ -126,9 +147,13 @@ fun HomeScreen(
 
     Home(
         modifier = modifier,
-        uiState.assunzioni,
+        uiState = uiState,
+        onAssumiClick = homeViewModel::onAssumiClick,
+        onAnnullaClick = homeViewModel::onAnnullaClick,
         onAddMedicineButtonClick = onAddMedicineButtonClick,
-        onUserSettingsButtonClick = onUserSettingsButtonClick
+        onUserSettingsButtonClick = onUserSettingsButtonClick,
+        onFrequenzaButtonClick = onFrequenzaButtonClick,
+        onMedicinaliButtonClick = onMedicinaliButtonClick
     )
 }
 
@@ -137,13 +162,13 @@ fun LoadingScreen(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier,
-        color = Color.White
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Box(
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -154,185 +179,295 @@ fun ErrorScreen(
     errorMessage: String
 ) {
     Surface(
-        modifier = modifier,
-        color = Color.White
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
         Box(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = errorMessage
+                modifier = Modifier.padding(24.dp),
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(
     modifier: Modifier = Modifier,
-    assunzioniGiornaliere: List<AssunzioneGiornaliera>,
+    uiState: HomeUiState,
+    onAssumiClick: (AssunzionePrevista) -> Unit,
+    onAnnullaClick: (AssunzionePrevista) -> Unit,
     onAddMedicineButtonClick: () -> Unit,
-    onUserSettingsButtonClick: () -> Unit
+    onUserSettingsButtonClick: () -> Unit,
+    onFrequenzaButtonClick: () -> Unit,
+    onMedicinaliButtonClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier.padding(horizontal = 10.dp).padding(top = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.Start
-            ) {
-                val today = LocalDate.now()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-                Text(
-                    text = "${today.dayOfWeek.name} ${today.dayOfMonth} ${today.month.name}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            IconButton(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(color = MaterialTheme.colorScheme.primary),
-                onClick = dropUnlessResumed {
-                    onUserSettingsButtonClick()
-                }
-            ) {
-                Icon(
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Account"
-                )
+    // Punto unico di registrazione: registra l'assunzione e mostra lo
+    // Snackbar con l'azione di annullamento. Tutte le card passano da qui.
+    val confermaAssunzione: (AssunzioneGiornaliera) -> Unit = { assunzione ->
+        // Questa funzione è fuori dalla coroutine, quindi viene eseguita sul main thread immediatamente
+        onAssumiClick(assunzione.assunzionePrevista)
+        scope.launch {
+            // showSnackBar è una suspend function, quindi in certi punti sospenderà la coroutine
+            // ma lascerà comunque il thread libero di fare altro, non sta di fatto bloccando il thread
+            val risultato = snackbarHostState.showSnackbar(
+                message = "${assunzione.nomeMedicinale} segnata come assunta",
+                actionLabel = "Annulla",
+                duration = SnackbarDuration.Short
+            )
+            if (risultato == SnackbarResult.ActionPerformed) {
+                onAnnullaClick(assunzione.assunzionePrevista)
             }
         }
+    }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+                .padding(top = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Chip(
-                icon = Icons.Default.DateRange,
-                text = "Frequenza",
-                onClick = {}
-            )
-            Chip(
-                icon = Icons.Default.Send,
-                text = "Storico",
-                onClick = {}
-            )
-            Chip(
-                icon = Icons.Default.Add,
-                text = "Aggiungi",
-                onClick = onAddMedicineButtonClick
-            )
-        }
+            IntestazioneHome(onUserSettingsButtonClick)
 
-        Spacer(
-            Modifier.height(20.dp)
-        )
-        Image(
-            modifier = Modifier.width(150.dp).height(150.dp),
-            alignment = Alignment.Center,
-            painter = painterResource(R.drawable.pill),
-            contentDescription = "Pill's image",
-            contentScale = ContentScale.Crop
-        )
-        Spacer(
-            Modifier.height(20.dp)
-        )
-
-        // Pulsante conferma
-        Button(
-            onClick = {}
-        ) {
-            Text(
-                modifier = Modifier.padding(
-                    vertical = 4.dp,
-                    horizontal = 32.dp
-                ),
-                text = "Conferma assunzione",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold
+            BarraAderenza(
+                assunte = uiState.assunteOggi,
+                totali = uiState.totaliOggi
             )
-        }
 
-        Spacer(
-            Modifier.height(10.dp)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "OGGI - 0/${assunzioniGiornaliere.size} ASSUNTE",
-                fontWeight = FontWeight.Bold
+            AzioniRapide(
+                onFrequenzaClick = onFrequenzaButtonClick,
+                onMedicinaliClick = onMedicinaliButtonClick,
+                onAggiungiClick = onAddMedicineButtonClick
             )
-            // "OGGI - 0/3 assunte
-        }
 
-        if (assunzioniGiornaliere.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Nessuna assunzione in programma"
-                )
-            }
-        } else {
             LazyColumn(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = PaddingValues(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(assunzioniGiornaliere) { assunzioneGiornaliera ->
-                    // Lista medicine
-                    MedicineCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        assunzioneGiornaliera
+                item {
+                    ProssimaAssunzioneCard(
+                        prossima = uiState.prossimaAssunzione,
+                        puoAssumereOra = uiState.puoAssumereOra,
+                        assunteOggi = uiState.assunteOggi,
+                        totaliOggi = uiState.totaliOggi,
+                        onConferma = confermaAssunzione,
+                        onAggiungiClick = onAddMedicineButtonClick
                     )
+                }
+
+                if (uiState.inRitardo.isNotEmpty()) {
+                    item {
+                        SezioneTitolo(
+                            testo = "IN RITARDO",
+                            numero = uiState.inRitardo.size,
+                            icon = Icons.Default.Warning,
+                            accentColor = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    items(uiState.inRitardo, key = { it.assunzionePrevista.id }) { assunzione ->
+                        AssunzioneRitardataCard(assunzione, confermaAssunzione)
+                    }
+                }
+
+                if (uiState.prossimeAssunzioni.isNotEmpty()) {
+                    item {
+                        SezioneTitolo(
+                            testo = "PROSSIME ASSUNZIONI",
+                            numero = uiState.prossimeAssunzioni.size,
+                            icon = Icons.Default.ArrowForward
+                        )
+                    }
+                    items(uiState.prossimeAssunzioni, key = { it.assunzionePrevista.id }) { assunzione ->
+                        ProssimaInCodaCard(assunzione, confermaAssunzione)
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * Intestazione della home: saluto contestuale in base all'ora del giorno,
+ * data corrente in italiano, e accesso rapido alle impostazioni utente.
+ */
 @Composable
-fun Chip(
+private fun IntestazioneHome(
+    onUserSettingsButtonClick: () -> Unit
+) {
+    val oggi = remember { LocalDate.now() }
+    val ora = remember { LocalTime.now() }
+    val formatterData = remember { DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN) }
+    val dataFormattata = remember(oggi) {
+        oggi.format(formatterData).replaceFirstChar { it.uppercase() }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = saluto(ora),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = dataFormattata,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(color = MaterialTheme.colorScheme.secondaryContainer),
+            onClick = dropUnlessResumed {
+                onUserSettingsButtonClick()
+            }
+        ) {
+            Icon(
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Account"
+            )
+        }
+    }
+}
+
+private fun saluto(ora: LocalTime): String = when (ora.hour) {
+    in 5..11 -> "Buongiorno"
+    in 12..17 -> "Buon pomeriggio"
+    else -> "Buonasera"
+}
+
+/**
+ * Barra di aderenza giornaliera: quante assunzioni previste per oggi sono
+ * già state completate. Non viene mostrata se non ci sono assunzioni oggi.
+ */
+@Composable
+private fun BarraAderenza(
+    assunte: Int,
+    totali: Int,
+    modifier: Modifier = Modifier
+) {
+    if (totali == 0) return
+
+    val progresso = (assunte.toFloat() / totali.toFloat()).coerceIn(0f, 1f)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Aderenza di oggi",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$assunte/$totali",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(50))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progresso)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AzioniRapide(
+    onFrequenzaClick: () -> Unit,
+    onMedicinaliClick: () -> Unit,
+    onAggiungiClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        AzioneRapida(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.DateRange,
+            text = "Frequenza",
+            onClick = onFrequenzaClick
+        )
+        AzioneRapida(
+            modifier = Modifier.weight(1f),
+            icon = Icons.AutoMirrored.Filled.List,
+            text = "Medicinali",
+            onClick = onMedicinaliClick
+        )
+        AzioneRapida(
+            modifier = Modifier.weight(1f),
+            icon = Icons.Default.Add,
+            text = "Aggiungi",
+            onClick = onAggiungiClick
+        )
+    }
+}
+
+@Composable
+private fun AzioneRapida(
     modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Default.Info,
-    text: String = "Undefined",
+    icon: ImageVector,
+    text: String,
     onClick: () -> Unit
 ) {
     Card(
+        modifier = modifier,
         onClick = dropUnlessResumed {
             onClick()
         },
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(2.dp)
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(
                 modifier = Modifier.size(20.dp),
@@ -341,6 +476,7 @@ fun Chip(
             )
             Text(
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
                 text = text
             )
         }
@@ -348,145 +484,538 @@ fun Chip(
 }
 
 @Composable
-fun MedicineCard(
-    modifier: Modifier = Modifier,
-    assunzioneGiornaliera: AssunzioneGiornaliera
+private fun SezioneTitolo(
+    testo: String,
+    numero: Int,
+    icon: ImageVector,
+    accentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
-    Card(
-        modifier = modifier
-            .clip(RoundedCornerShape(24.dp)),
-        elevation = CardDefaults.cardElevation(2.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(
-                vertical = 16.dp,
-                horizontal = 8.dp
-            ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = accentColor,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = "$testo ($numero)",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = accentColor
+        )
+    }
+}
+
+/**
+ * Badge circolare con l'icona della pillola. È l'elemento visivo ricorrente
+ * di tutta la schermata: compare in primo piano nella card della prossima
+ * assunzione e, più piccolo, in ogni riga delle altre sezioni.
+ */
+@Composable
+private fun BadgePillola(
+    modifier: Modifier = Modifier,
+    dimensione: Dp = 44.dp,
+    containerColor: Color = MaterialTheme.colorScheme.primary
+) {
+    Box(
+        modifier = modifier
+            .size(dimensione)
+            .clip(CircleShape)
+            .background(containerColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            modifier = Modifier.size(dimensione * 0.6f),
+            painter = painterResource(R.drawable.pill),
+            contentDescription = null,
+            contentScale = ContentScale.Fit
+        )
+    }
+}
+
+/**
+ * Card in primo piano. Sia "Assumi" (nella finestra) sia "Assumi in anticipo"
+ * (dopo conferma nel dialog) passano da `eseguiConferma`, che mostra il
+ * checkmark prima di notificare la conferma vera e propria.
+ *
+ * Gestisce anche gli stati particolari: nessuna assunzione prevista oggi, e
+ * tutte le assunzioni di oggi già completate.
+ */
+@Composable
+private fun ProssimaAssunzioneCard(
+    prossima: AssunzioneGiornaliera?,
+    puoAssumereOra: Boolean,
+    assunteOggi: Int,
+    totaliOggi: Int,
+    onConferma: (AssunzioneGiornaliera) -> Unit,
+    onAggiungiClick: () -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+    var isConfirming by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun eseguiConferma(assunzione: AssunzioneGiornaliera) {
+        isConfirming = true
+        scope.launch {
+            delay(DURATA_CHECK_MS)
+            onConferma(assunzione)
+            delay(200)
+            isConfirming = false
+        }
+    }
+
+    val tuttoCompletato = prossima == null && totaliOggi > 0 && assunteOggi == totaliOggi
+    val nessunaAssunzioneOggi = totaliOggi == 0
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                prossima != null -> MaterialTheme.colorScheme.primaryContainer
+                tuttoCompletato -> MaterialTheme.colorScheme.secondaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            },
+            contentColor = when {
+                prossima != null -> MaterialTheme.colorScheme.onPrimaryContainer
+                tuttoCompletato -> MaterialTheme.colorScheme.onSecondaryContainer
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.primary)
-                        .padding(12.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    imageVector = Icons.Outlined.Notifications,
-                    contentDescription = "clock"
-                )
-                Column(
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
+            when {
+                prossima != null -> {
+                    BadgePillola(containerColor = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        text = assunzioneGiornaliera.nomeMedicinale,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontSize = 18.sp,
+                        text = "PROSSIMA ASSUNZIONE",
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${assunzioneGiornaliera.assunzionePrevista.orarioPrevisto.format(
-                            DateTimeFormatter.ofPattern("HH:mm"))}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal
+                        text = prossima.nomeMedicinale,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    if (!prossima.dosaggio.isNullOrBlank()) {
+                        Text(
+                            text = prossima.dosaggio,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Text(
+                        text = prossima.assunzionePrevista.orarioPrevisto.format(
+                            DateTimeFormatter.ofPattern("HH:mm")
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                        if (inCorso) {
+                            CheckmarkConfermato()
+                        } else {
+                            Button(
+                                shape = RoundedCornerShape(50),
+                                onClick = {
+                                    if (puoAssumereOra) {
+                                        eseguiConferma(prossima)
+                                    } else {
+                                        showDialog = true
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 24.dp),
+                                    text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                tuttoCompletato -> {
+//                    Icon(
+//                        imageVector = Icons.Default.CheckCircle,
+//                        contentDescription = null,
+//                        modifier = Modifier.size(40.dp)
+//                    )
+                    Image(
+                        modifier = Modifier.size(64.dp),
+                        painter = painterResource(id = R.drawable.listcompleted),
+                        contentDescription = "Lista medicine completate"
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Tutto fatto per oggi",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Hai assunto $assunteOggi/$totaliOggi medicine previste",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
                     )
                 }
-            }
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.primary)
-                    ,
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    modifier = Modifier
-                        .padding(horizontal = 18.dp, vertical = 12.dp),
-                    text = "Prendi",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
+                nessunaAssunzioneOggi -> {
+                    Text(
+                        text = "Nessuna assunzione in programma",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = onAggiungiClick, shape = RoundedCornerShape(50)) {
+                        Text("Aggiungi medicinale")
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDialog && prossima != null) {
+        ConfermaAnticipoDialog(
+            nomeMedicinale = prossima.nomeMedicinale,
+            onConferma = {
+                showDialog = false
+                eseguiConferma(prossima)
+            },
+            onAnnulla = { showDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun CheckmarkConfermato() {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = "Assunta",
+            tint = MaterialTheme.colorScheme.onPrimary
+        )
+    }
+}
+
+@Composable
+private fun ConfermaAnticipoDialog(
+    nomeMedicinale: String,
+    onConferma: () -> Unit,
+    onAnnulla: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onAnnulla,
+        title = { Text("Assumere in anticipo?") },
+        text = {
+            Text("Non è ancora l'orario previsto per $nomeMedicinale. Vuoi assumerla comunque adesso?")
+        },
+        confirmButton = {
+            TextButton(onClick = onConferma) { Text("Assumi in anticipo") }
+        },
+        dismissButton = {
+            TextButton(onClick = onAnnulla) { Text("Annulla") }
+        }
+    )
+}
+
+/**
+ * Sequenza condivisa da "in ritardo" e "prossime assunzioni":
+ * checkmark -> collasso della card -> solo allora `onConferma` reale.
+ * La card resta composta (stessa `key` nella LazyColumn) finché l'uscita
+ * non è finita, quindi la rimozione dalla lista vera non causa scatti.
+ */
+@Composable
+private fun CardConAnimazioneAssunzione(
+    onConferma: () -> Unit,
+    content: @Composable (isConfirming: Boolean, avviaConferma: () -> Unit) -> Unit
+) {
+    var isConfirming by remember { mutableStateOf(false) }
+    var visible by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    AnimatedVisibility(
+        visible = visible,
+        exit = shrinkVertically(animationSpec = tween(DURATA_COLLASSO_MS)) +
+                fadeOut(animationSpec = tween(DURATA_COLLASSO_MS / 2))
+    ) {
+        content(isConfirming) {
+            // Protegge da doppio tap: se l'animazione è già partita, ignora
+            // ulteriori richieste di conferma finché non si conclude.
+            if (!isConfirming) {
+                isConfirming = true
+                scope.launch {
+                    delay(DURATA_CHECK_MS)
+                    visible = false
+                    delay(DURATA_COLLASSO_MS.toLong())
+                    onConferma()
+                }
             }
         }
     }
 }
 
-@Preview
 @Composable
-fun MedicineCardPreview() {
-    AppTheme {
-        MedicineCard(
-            assunzioneGiornaliera = AssunzioneGiornaliera(
-                AssunzionePrevista(
-                    1,
-                    2,
-                    LocalDate.now(),
-                    LocalTime.now(),
-                    StatoAssunzione.IN_ATTESA
-                ),
-                null,
-                "Omeprazolo",
-                "1 compressa"
+private fun AssunzioneRitardataCard(
+    assunzione: AssunzioneGiornaliera,
+    onConferma: (AssunzioneGiornaliera) -> Unit
+) {
+    CardConAnimazioneAssunzione(onConferma = { onConferma(assunzione) }) { isConfirming, avviaConferma ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            ),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Column {
+                        Text(
+                            text = assunzione.nomeMedicinale,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = "Prevista per le ${
+                                assunzione.assunzionePrevista.orarioPrevisto.format(
+                                    DateTimeFormatter.ofPattern("HH:mm")
+                                )
+                            }",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+                AnimatedContent(targetState = isConfirming, label = "assumi_in_ritardo") { inCorso ->
+                    if (inCorso) {
+                        CheckmarkConfermato()
+                    } else {
+                        // Niente dialog qui: la medicina è già saltata, la conferma
+                        // dell'orario è già passata, non serve chiedere ulteriore conferma.
+                        OutlinedButton(onClick = avviaConferma, shape = RoundedCornerShape(50)) {
+                            Text("Assumi in ritardo")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProssimaInCodaCard(
+    assunzione: AssunzioneGiornaliera,
+    onConferma: (AssunzioneGiornaliera) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    CardConAnimazioneAssunzione(onConferma = { onConferma(assunzione) }) { isConfirming, avviaConferma ->
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            elevation = CardDefaults.cardElevation(0.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = assunzione.assunzionePrevista.orarioPrevisto.format(
+                                DateTimeFormatter.ofPattern("HH:mm")
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = assunzione.nomeMedicinale,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                        if (!assunzione.dosaggio.isNullOrBlank()) {
+                            Text(
+                                text = assunzione.dosaggio,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+                AnimatedContent(targetState = isConfirming, label = "assumi_in_anticipo") { inCorso ->
+                    if (inCorso) {
+                        CheckmarkConfermato()
+                    } else {
+                        OutlinedButton(onClick = { showDialog = true }, shape = RoundedCornerShape(50)) {
+                            Text("Assumi in anticipo")
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showDialog) {
+            ConfermaAnticipoDialog(
+                nomeMedicinale = assunzione.nomeMedicinale,
+                onConferma = {
+                    showDialog = false
+                    avviaConferma()
+                },
+                onAnnulla = { showDialog = false }
             )
+        }
+    }
+}
+
+// --- Preview: dati di prova ---
+
+private fun assunzioneDiProva(
+    id: Int,
+    nome: String,
+    orario: LocalTime,
+    dosaggio: String? = "1 compressa",
+    stato: StatoAssunzione = StatoAssunzione.IN_ATTESA
+) = AssunzioneGiornaliera(
+    assunzionePrevista = AssunzionePrevista(
+        id = id,
+        idOrarioAssunzione = id,
+        data = LocalDate.now(),
+        orarioPrevisto = orario,
+        stato = stato
+    ),
+    assunzioneEffettuata = null,
+    nomeMedicinale = nome,
+    dosaggio = dosaggio
+)
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomeScreenPreview() {
+    AppTheme {
+        Home(
+            uiState = HomeUiState(
+                prossimaAssunzione = assunzioneDiProva(1, "Omeprazolo", LocalTime.now().plusMinutes(2)),
+                puoAssumereOra = true,
+                inRitardo = listOf(
+                    assunzioneDiProva(2, "Cardioaspirina", LocalTime.now().minusHours(2), dosaggio = "100mg")
+                ),
+                prossimeAssunzioni = listOf(
+                    assunzioneDiProva(3, "Vitamina D", LocalTime.now().plusHours(3), dosaggio = "1 goccia"),
+                    assunzioneDiProva(4, "Metformina", LocalTime.now().plusHours(6), dosaggio = "500mg")
+                ),
+                assunteOggi = 1,
+                totaliOggi = 4,
+                isLoading = false
+            ),
+            onAssumiClick = {},
+            onAnnullaClick = {},
+            onAddMedicineButtonClick = {},
+            onUserSettingsButtonClick = {},
+            onFrequenzaButtonClick = {},
+            onMedicinaliButtonClick = {}
         )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun HomeScreenPreview() {
+fun HomeScreenVuotaPreview() {
     AppTheme {
-        Scaffold { innerPadding ->
-            Home(
-                modifier = Modifier.padding(innerPadding),
-                emptyList(),
-                {},
-                {}
-            )
-        }
+        Home(
+            uiState = HomeUiState(isLoading = false),
+            onAssumiClick = {},
+            onAnnullaClick = {},
+            onAddMedicineButtonClick = {},
+            onUserSettingsButtonClick = {},
+            onFrequenzaButtonClick = {},
+            onMedicinaliButtonClick = {}
+        )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun HomeScreenFullPreview() {
+fun HomeScreenCompletataPreview() {
     AppTheme {
-        Scaffold { innerPadding ->
-            Home(
-                modifier = Modifier.padding(innerPadding),
-                listOf(
-                    AssunzioneGiornaliera(
-                        AssunzionePrevista(
-                            1,
-                            1,
-                            LocalDate.now(),
-                            LocalTime.now(),
-                            StatoAssunzione.IN_ATTESA
-                        ),
-                        null,
-                        "Omeprazolo",
-                        null
-                    )
-                ),
-                {},
-                {}
-            )
-        }
+        Home(
+            uiState = HomeUiState(
+                assunteOggi = 3,
+                totaliOggi = 3,
+                isLoading = false
+            ),
+            onAssumiClick = {},
+            onAnnullaClick = {},
+            onAddMedicineButtonClick = {},
+            onUserSettingsButtonClick = {},
+            onFrequenzaButtonClick = {},
+            onMedicinaliButtonClick = {}
+        )
     }
 }
 
 @Preview
 @Composable
-fun ChipPreview() {
+fun AzioneRapidaPreview() {
     AppTheme {
-        Chip(
-            icon = Icons.Default.Info,
+        AzioneRapida(
+            icon = Icons.Default.Add,
             text = "Aggiungi",
             onClick = {}
         )

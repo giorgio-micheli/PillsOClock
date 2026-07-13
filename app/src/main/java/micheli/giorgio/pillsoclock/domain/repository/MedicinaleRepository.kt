@@ -14,11 +14,15 @@ interface MedicinaleRepository {
 
     fun getMedicinaliAttiviConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>>
 
+    fun getTuttiMedicinaliConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>>
+
     suspend fun inserisciMedicinaleConPianoEOrari(
         medicinale: Medicinale,
         piano: PianoAssunzione,
         orari: List<OrarioAssunzione>
     )
+
+    suspend fun aggiornaMedicinale(medicinale: Medicinale)
 
     suspend fun aggiornaPianoEOrari(
         piano: PianoAssunzione,
@@ -26,6 +30,8 @@ interface MedicinaleRepository {
     )
 
     suspend fun disattivaMedicinale(id: Int)
+
+    suspend fun attivaMedicinale(id: Int)
 
     suspend fun eliminaMedicinale(medicinale: Medicinale)
 

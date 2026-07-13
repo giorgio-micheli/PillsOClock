@@ -1,5 +1,6 @@
 package micheli.giorgio.pillsoclock
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,19 +28,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
+        // synthetic property generata dal compilatore, chiama il classico metodo getApplicationContext()
+        val app = applicationContext as PillsOClockApp
 
         setContent {
-
-            var isDarkTheme by remember { mutableStateOf(false) }
+            // Imposto temporaneamente il light theme come tema obbligatorio
             AppTheme(
-                darkTheme = isDarkTheme
+                darkTheme = false
             ) {
-                Scaffold { innerPadding ->
-                    NavigationRoot(
-                        modifier = Modifier.fillMaxSize().padding(innerPadding)
-                    )
-                }
+                NavigationRoot(
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
