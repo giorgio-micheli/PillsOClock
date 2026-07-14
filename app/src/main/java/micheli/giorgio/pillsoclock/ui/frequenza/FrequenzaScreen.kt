@@ -87,60 +87,41 @@ fun Frequenza(
     onMeseSuccessivoClick: () -> Unit,
     onGiornoClick: (LocalDate) -> Unit
 ) {
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Frequenza") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Card(
+            modifier = Modifier.padding(12.dp),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
             )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Card(
-                modifier = Modifier.padding(12.dp),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                )
-            ) {
-                SelettoreMese(
-                    mese = uiState.meseVisualizzato,
-                    onMesePrecedenteClick = onMesePrecedenteClick,
-                    onMeseSuccessivoClick = onMeseSuccessivoClick
-                )
+            SelettoreMese(
+                mese = uiState.meseVisualizzato,
+                onMesePrecedenteClick = onMesePrecedenteClick,
+                onMeseSuccessivoClick = onMeseSuccessivoClick
+            )
 
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                } else {
-                    CalendarioMese(
-                        mese = uiState.meseVisualizzato,
-                        giorniConAssunzioni = uiState.giorniConAssunzioni,
-                        onGiornoClick = onGiornoClick
-                    )
-                    Legenda()
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
+            } else {
+                CalendarioMese(
+                    mese = uiState.meseVisualizzato,
+                    giorniConAssunzioni = uiState.giorniConAssunzioni,
+                    onGiornoClick = onGiornoClick
+                )
+                Legenda()
             }
         }
     }
@@ -314,21 +295,24 @@ private fun Legenda() {
 fun FrequenzaScreenPreview() {
     val oggi = LocalDate.now()
     AppTheme {
-        Frequenza(
-            uiState = FrequenzaUiState(
-                meseVisualizzato = YearMonth.now(),
-                giorniConAssunzioni = setOf(
-                    oggi,
-                    oggi.minusDays(1),
-                    oggi.minusDays(2),
-                    oggi.minusDays(5)
+        Scaffold() { innerPadding ->
+            Frequenza(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                uiState = FrequenzaUiState(
+                    meseVisualizzato = YearMonth.now(),
+                    giorniConAssunzioni = setOf(
+                        oggi,
+                        oggi.minusDays(1),
+                        oggi.minusDays(2),
+                        oggi.minusDays(5)
+                    ),
+                    isLoading = false
                 ),
-                isLoading = false
-            ),
-            onBack = {},
-            onMesePrecedenteClick = {},
-            onMeseSuccessivoClick = {},
-            onGiornoClick = {}
-        )
+                onBack = {},
+                onMesePrecedenteClick = {},
+                onMeseSuccessivoClick = {},
+                onGiornoClick = {}
+            )
+        }
     }
 }

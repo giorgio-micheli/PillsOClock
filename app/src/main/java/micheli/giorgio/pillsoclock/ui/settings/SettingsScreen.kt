@@ -1,5 +1,6 @@
 package micheli.giorgio.pillsoclock.ui.settings
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 
 sealed interface SettingsItem {
     data class Toggle(
@@ -52,10 +55,10 @@ data class SettingsSection(
     val items: List<SettingsItem>
 )
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit
     // Se ci serviranno delle callback per navigare nelle altre sezioni andranno aggiunte qui
 ) {
 
@@ -74,40 +77,25 @@ fun SettingsScreen(
         )
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Impostazioni") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        sections.forEach { section ->
+            item {
+                SectionHeader(section.title)
+            }
+            items(section.items) { item ->
+                when (item) {
+                    is SettingsItem.Toggle -> SettingsToggleRow(item)
+                    is SettingsItem.Clickable -> SettingsClickableRow(item)
                 }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            sections.forEach { section ->
-                item {
-
-                }
-                items(section.items) { item ->
-                    when (item) {
-                        is SettingsItem.Toggle -> SettingsToggleRow(item)
-                        is SettingsItem.Clickable -> SettingsClickableRow(item)
-                    }
-                }
-                item {
-                    HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    thickness = DividerDefaults.Thickness,
-                    color = DividerDefaults.color
-                    )
-                }
+            }
+            item {
+                HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                thickness = DividerDefaults.Thickness,
+                color = DividerDefaults.color
+                )
             }
         }
     }
@@ -120,7 +108,7 @@ private fun SectionHeader(title: String) {
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
     )
 }
 
@@ -129,7 +117,7 @@ private fun SettingsToggleRow(item: SettingsItem.Toggle) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -152,7 +140,7 @@ private fun SettingsClickableRow(item: SettingsItem.Clickable) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { item.onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -166,5 +154,13 @@ private fun SettingsClickableRow(item: SettingsItem.Clickable) {
             }
         }
         Icon(Icons.Filled.Home, contentDescription = null)
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun SettingsScreenPreview() {
+    AppTheme {
+        SettingsScreen()
     }
 }

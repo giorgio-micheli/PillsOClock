@@ -1,5 +1,6 @@
 package micheli.giorgio.pillsoclock.ui.home
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -101,6 +103,7 @@ fun HomeScreen(
 ) {
 
     val context = LocalContext.current
+    // applicationContext è una synthetic property generata dal compilatore, chiama il classico metodo getApplicationContext()
     val app = context.applicationContext as PillsOClockApp
 
     /*
@@ -196,6 +199,7 @@ fun ErrorScreen(
     }
 }
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(
@@ -234,15 +238,14 @@ fun Home(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { innerPadding ->
+    ) {
         Column(
             modifier = Modifier
-                .padding(innerPadding)
                 .padding(horizontal = 16.dp)
-                .padding(top = 20.dp),
+                .padding(top = 10.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            IntestazioneHome(onUserSettingsButtonClick)
+            //IntestazioneHome(onUserSettingsButtonClick)
 
             BarraAderenza(
                 assunte = uiState.assunteOggi,
@@ -307,7 +310,7 @@ fun Home(
  * data corrente in italiano, e accesso rapido alle impostazioni utente.
  */
 @Composable
-private fun IntestazioneHome(
+fun IntestazioneHome(
     onUserSettingsButtonClick: () -> Unit
 ) {
     val oggi = remember { LocalDate.now() }
@@ -318,7 +321,10 @@ private fun IntestazioneHome(
     }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -434,12 +440,12 @@ private fun AzioniRapide(
             text = "Medicinali",
             onClick = onMedicinaliClick
         )
-        AzioneRapida(
-            modifier = Modifier.weight(1f),
-            icon = Icons.Default.Add,
-            text = "Aggiungi",
-            onClick = onAggiungiClick
-        )
+//        AzioneRapida(
+//            modifier = Modifier.weight(1f),
+//            icon = Icons.Default.Add,
+//            text = "Aggiungi",
+//            onClick = onAggiungiClick
+//        )
     }
 }
 

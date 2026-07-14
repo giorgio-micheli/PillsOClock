@@ -1,18 +1,47 @@
 package micheli.giorgio.pillsoclock.ui.navigation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -21,10 +50,12 @@ import androidx.navigation3.ui.NavDisplay
 import com.example.nav3recipes.bottomsheet.BottomSheetScene
 import com.example.nav3recipes.bottomsheet.BottomSheetSceneStrategy
 import kotlinx.serialization.Serializable
+import micheli.giorgio.pillsoclock.LocalSnackbarHostState
 import micheli.giorgio.pillsoclock.ui.addMedicine.AddMedicinale
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaGiornoScreen
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaScreen
 import micheli.giorgio.pillsoclock.ui.home.HomeScreen
+import micheli.giorgio.pillsoclock.ui.home.IntestazioneHome
 import micheli.giorgio.pillsoclock.ui.medicinali.MedicinaliScreen
 import micheli.giorgio.pillsoclock.ui.settings.SettingsScreen
 import micheli.giorgio.pillsoclock.ui.theme.onBackgroundDark
@@ -48,93 +79,117 @@ Un NavEntry è un oggetto che contiene sia la key, sia il Composable da mostrare
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavigationRoot(
-    modifier: Modifier = Modifier
-) {
+fun NavigationRoot() {
     // Backstack di Navigation3 gestito completamente dal developer
     // Viene implementato come una lista osservabile da Compose che contiene delle keys.
     val backStack = remember { mutableStateListOf<Any>(Routes.Home) }
     // Necessario per avere il bottom sheet dialog come destinazione di Navigation3
     val sceneStrategies = remember { listOf(BottomSheetSceneStrategy<Any>()) }
 
-    NavDisplay(
-        modifier = modifier,
-        backStack = backStack,
-        onBack = { backStack.removeFromBackstack() },
-        sceneStrategies = sceneStrategies,
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator()
-        ),
-        transitionSpec = {
-            fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+    Scaffold(
+        topBar = {
+            SelectTopBar(
+                route = backStack.lastOrNull(),
+                onBack = { backStack.removeFromBackstack() },
+                onNavigateToSettings = { backStack.addToBackstack(Routes.Settings) }
+            )
         },
-        popTransitionSpec = {
-            fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-        },
-        predictivePopTransitionSpec = {
-            fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-        },
-        entryProvider = { key ->
-            when (key) {
-                is Routes.Home -> NavEntry(key) {
-                    HomeScreen(
-                        onAddMedicineButtonClick = {
-                            backStack.addToBackstack(Routes.AddMedicine())
-                        },
-                        onUserSettingsButtonClick = {
-                            backStack.addToBackstack(Routes.Settings)
-                        },
-                        onFrequenzaButtonClick = {
-                            backStack.addToBackstack(Routes.Frequenza)
-                        },
-                        onMedicinaliButtonClick = {
-                            backStack.addToBackstack(Routes.Medicinali)
-                        }
-                    )
-                }
-                is Routes.AddMedicine -> NavEntry(
-                    key,
-                    metadata = BottomSheetSceneStrategy.bottomSheet()
-                ) {
-                    AddMedicinale(idMedicinale = key.idMedicinale)
-                }
-                is Routes.Medicinali -> NavEntry(key) {
-                    MedicinaliScreen(
-                        onBack = { backStack.removeFromBackstack() },
-                        onModificaMedicinaleClick = { idMedicinale ->
-                            backStack.addToBackstack(Routes.AddMedicine(idMedicinale))
-                        },
-                        onAggiungiMedicinaleClick = {
-                            backStack.addToBackstack(Routes.AddMedicine())
-                        }
-                    )
-                }
-                is Routes.Settings -> NavEntry(key) {
-                    SettingsScreen(
-                        onBack = { backStack.removeFromBackstack() }
-                    )
-                }
-                is Routes.Frequenza -> NavEntry(key) {
-                    FrequenzaScreen(
-                        onBack = { backStack.removeFromBackstack() },
-                        onGiornoClick = { giorno ->
-                            backStack.addToBackstack(Routes.FrequenzaGiorno(giorno.toEpochDay()))
-                        }
-                    )
-                }
-                is Routes.FrequenzaGiorno -> NavEntry(key) {
-                    FrequenzaGiornoScreen(
-                        data = LocalDate.ofEpochDay(key.epochDay),
-                        onBack = { backStack.removeFromBackstack() }
-                    )
-                }
-                else -> NavEntry(Unit) {
+        floatingActionButton = {
 
+            AnimatedVisibility(
+                visible = backStack.lastOrNull() is Routes.Home,
+                enter = scaleIn(tween(300)) + fadeIn(tween(300)),
+                exit = scaleOut(tween(200)) + fadeOut(tween(200))
+            ) {
+                ExtendedFloatingActionButton(
+                    shape = RoundedCornerShape(24.dp),
+                    onClick = { backStack.addToBackstack(Routes.AddMedicine()) }
+                ) {
+                    Icon(
+                        modifier = Modifier.size(24.dp),
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Aggiungi mediciale"
+                    )
                 }
             }
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = LocalSnackbarHostState.current)
         }
-    )
+    ) { innerPadding ->
+        NavDisplay(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            backStack = backStack,
+            onBack = { backStack.removeFromBackstack() },
+            sceneStrategies = sceneStrategies,
+            entryDecorators = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator()
+            ),
+            transitionSpec = {
+                fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+            },
+            popTransitionSpec = {
+                fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+            },
+            predictivePopTransitionSpec = {
+                fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+            },
+            entryProvider = { key ->
+                when (key) {
+                    is Routes.Home -> NavEntry(key) {
+                        HomeScreen(
+                            onAddMedicineButtonClick = {
+                                backStack.addToBackstack(Routes.AddMedicine())
+                            },
+                            onUserSettingsButtonClick = {
+                                backStack.addToBackstack(Routes.Settings)
+                            },
+                            onFrequenzaButtonClick = {
+                                backStack.addToBackstack(Routes.Frequenza)
+                            },
+                            onMedicinaliButtonClick = {
+                                backStack.addToBackstack(Routes.Medicinali)
+                            }
+                        )
+                    }
+                    is Routes.AddMedicine -> NavEntry(
+                        key,
+                        metadata = BottomSheetSceneStrategy.bottomSheet()
+                    ) {
+                        AddMedicinale(idMedicinale = key.idMedicinale)
+                    }
+                    is Routes.Medicinali -> NavEntry(key) {
+                        MedicinaliScreen(
+                            onModificaMedicinaleClick = { idMedicinale ->
+                                backStack.addToBackstack(Routes.AddMedicine(idMedicinale))
+                            }
+                        )
+                    }
+                    is Routes.Settings -> NavEntry(key) {
+                        SettingsScreen()
+                    }
+                    is Routes.Frequenza -> NavEntry(key) {
+                        FrequenzaScreen(
+                            onBack = { backStack.removeFromBackstack() },
+                            onGiornoClick = { giorno ->
+                                backStack.addToBackstack(Routes.FrequenzaGiorno(giorno.toEpochDay()))
+                            }
+                        )
+                    }
+                    is Routes.FrequenzaGiorno -> NavEntry(key) {
+                        FrequenzaGiornoScreen(
+                            data = LocalDate.ofEpochDay(key.epochDay),
+                            onBack = { backStack.removeFromBackstack() }
+                        )
+                    }
+                    else -> NavEntry(Unit) {
+
+                    }
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -151,4 +206,46 @@ fun SnapshotStateList<Any>.removeFromBackstack(): Unit {
  */
 fun SnapshotStateList<Any>.addToBackstack(key: NavKey): Unit {
     if (this[size - 1] != key) this.add(key)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectTopBar(
+    route: Any?,
+    onBack: () -> Unit,
+    onNavigateToSettings: () -> Unit
+) {
+
+    AnimatedContent(
+        targetState = route,
+        transitionSpec = {
+            fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+        },
+        label = "topBarTransition"
+    ) { currentRoute ->
+
+        when (currentRoute) {
+            is Routes.Home, is Routes.AddMedicine -> IntestazioneHome(onNavigateToSettings)
+            is Routes.Settings, is Routes.Frequenza, is Routes.Medicinali -> {
+
+                val title = when (currentRoute) {
+                    is Routes.Settings -> "Settings"
+                    is Routes.Frequenza -> "Frequenza"
+                    is Routes.Medicinali -> "Medicinali"
+                    else -> null
+                }
+
+                if (title != null) {
+                    TopAppBar(
+                        title = { Text(title) },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
 }

@@ -84,9 +84,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun MedicinaliScreen(
     modifier: Modifier = Modifier,
-    onBack: () -> Unit,
-    onModificaMedicinaleClick: (Int) -> Unit,
-    onAggiungiMedicinaleClick: () -> Unit
+    onModificaMedicinaleClick: (Int) -> Unit
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as PillsOClockApp
@@ -103,9 +101,7 @@ fun MedicinaliScreen(
     Medicinali(
         modifier = modifier,
         uiState = uiState,
-        onBack = onBack,
         onModificaMedicinaleClick = onModificaMedicinaleClick,
-        onAggiungiMedicinaleClick = onAggiungiMedicinaleClick,
         onToggleAttivoClick = medicinaliViewModel::onToggleAttivoClick,
         onEliminaClick = medicinaliViewModel::onEliminaClick
     )
@@ -116,72 +112,45 @@ fun MedicinaliScreen(
 fun Medicinali(
     modifier: Modifier = Modifier,
     uiState: MedicinaliUiState,
-    onBack: () -> Unit,
     onModificaMedicinaleClick: (Int) -> Unit,
-    onAggiungiMedicinaleClick: () -> Unit,
     onToggleAttivoClick: (Medicinale) -> Unit,
     onEliminaClick: (Medicinale) -> Unit
 ) {
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Medicinali") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onAggiungiMedicinaleClick) {
-                        Icon(Icons.Default.Add, contentDescription = "Aggiungi medicinale")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        }
+
+        uiState.medicinali.isEmpty() -> {
+            MedicinaliVuoto(
+                modifier = Modifier
+                    .fillMaxSize(),
+                onAggiungiClick = { }
+                //TODO: pensare come implementarlo o rimuoverlo
             )
         }
-    ) { innerPadding ->
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            }
 
-            uiState.medicinali.isEmpty() -> {
-                MedicinaliVuoto(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                    onAggiungiClick = onAggiungiMedicinaleClick
-                )
-            }
-
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    contentPadding = PaddingValues(vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(uiState.medicinali, key = { it.medicinale.id }) { medicinaleConPiano ->
-                        MedicinaleCard(
-                            medicinaleConPiano = medicinaleConPiano,
-                            onClick = { onModificaMedicinaleClick(medicinaleConPiano.medicinale.id) },
-                            onToggleAttivoClick = { onToggleAttivoClick(medicinaleConPiano.medicinale) },
-                            onEliminaClick = { onEliminaClick(medicinaleConPiano.medicinale) }
-                        )
-                    }
+        else -> {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(uiState.medicinali, key = { it.medicinale.id }) { medicinaleConPiano ->
+                    MedicinaleCard(
+                        medicinaleConPiano = medicinaleConPiano,
+                        onClick = { onModificaMedicinaleClick(medicinaleConPiano.medicinale.id) },
+                        onToggleAttivoClick = { onToggleAttivoClick(medicinaleConPiano.medicinale) },
+                        onEliminaClick = { onEliminaClick(medicinaleConPiano.medicinale) }
+                    )
                 }
             }
         }
@@ -518,9 +487,7 @@ fun MedicinaliScreenPreview() {
                 ),
                 isLoading = false
             ),
-            onBack = {},
             onModificaMedicinaleClick = {},
-            onAggiungiMedicinaleClick = {},
             onToggleAttivoClick = {},
             onEliminaClick = {}
         )
@@ -533,9 +500,7 @@ fun MedicinaliScreenVuotaPreview() {
     AppTheme {
         Medicinali(
             uiState = MedicinaliUiState(isLoading = false),
-            onBack = {},
             onModificaMedicinaleClick = {},
-            onAggiungiMedicinaleClick = {},
             onToggleAttivoClick = {},
             onEliminaClick = {}
         )
