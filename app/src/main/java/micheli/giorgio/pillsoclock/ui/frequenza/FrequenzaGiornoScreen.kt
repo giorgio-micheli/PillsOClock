@@ -58,11 +58,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun FrequenzaGiornoScreen(
-    modifier: Modifier = Modifier,
-    data: LocalDate,
-    onBack: () -> Unit
-) {
+fun FrequenzaGiornoScreen(data: LocalDate) {
     val context = LocalContext.current
     val app = context.applicationContext as PillsOClockApp
 
@@ -76,19 +72,13 @@ fun FrequenzaGiornoScreen(
 
     val uiState by frequenzaGiornoViewModel.uiState.collectAsStateWithLifecycle()
 
-    FrequenzaGiorno(
-        modifier = modifier,
-        uiState = uiState,
-        onBack = onBack
-    )
+    FrequenzaGiorno(uiState = uiState)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FrequenzaGiorno(
-    modifier: Modifier = Modifier,
-    uiState: FrequenzaGiornoUiState,
-    onBack: () -> Unit
+    uiState: FrequenzaGiornoUiState
 ) {
     val formatterData = remember { DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN) }
     val dataFormattata = remember(uiState.data) {
@@ -98,66 +88,46 @@ fun FrequenzaGiorno(
     val assunte = uiState.assunzioni.count { it.assunzionePrevista.stato == StatoAssunzione.ASSUNTA }
     val totali = uiState.assunzioni.size
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text(dataFormattata) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
         }
-    ) { innerPadding ->
-        when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.padding(innerPadding).fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
+
+        uiState.assunzioni.isEmpty() -> {
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 24.dp)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                NessunaAssunzioneRegistrata()
             }
+        }
 
-            uiState.assunzioni.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(horizontal = 24.dp)
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
+        else -> {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                RiepilogoGiorno(assunte = assunte, totali = totali)
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    NessunaAssunzioneRegistrata()
-                }
-            }
-
-            else -> {
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    RiepilogoGiorno(assunte = assunte, totali = totali)
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp)
-                    ) {
-                        items(
-                            uiState.assunzioni.sortedBy { it.assunzionePrevista.orarioPrevisto },
-                            key = { it.assunzionePrevista.id }
-                        ) { assunzione ->
-                            AssunzioneGiornoCard(assunzione)
-                        }
+                    items(
+                        uiState.assunzioni.sortedBy { it.assunzionePrevista.orarioPrevisto },
+                        key = { it.assunzionePrevista.id }
+                    ) { assunzione ->
+                        AssunzioneGiornoCard(assunzione)
                     }
                 }
             }
@@ -363,8 +333,7 @@ fun FrequenzaGiornoScreenPreview() {
                     assunzioneDiProva(3, "Vitamina D", StatoAssunzione.IN_ATTESA, LocalTime.of(20, 0), "1 goccia")
                 ),
                 isLoading = false
-            ),
-            onBack = {}
+            )
         )
     }
 }
@@ -378,8 +347,7 @@ fun FrequenzaGiornoScreenVuotaPreview() {
                 data = LocalDate.now(),
                 assunzioni = emptyList(),
                 isLoading = false
-            ),
-            onBack = {}
+            )
         )
     }
 }

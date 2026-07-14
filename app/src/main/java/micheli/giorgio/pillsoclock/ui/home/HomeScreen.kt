@@ -93,6 +93,21 @@ import java.util.Locale
 private const val DURATA_CHECK_MS = 600L
 private const val DURATA_COLLASSO_MS = 300
 
+/*
+TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi sono dimenticato
+    di confermarlo sull'app" per i medicinali segnati come "in ritardo".
+ */
+
+//TODO: sistemare posizione snackbar che collide con il FAB nella homeScreen
+
+//TODO: sistemare ombra FAB che appare scattosamente poco dopo che è apparso il FAB
+
+/*
+TODO: cambiare destinazione per la "modifica medicinale", far apparire la schermata in un
+    single pane classico invece che nel bottom sheet dialog. Sistemare di conseguenza anche il fatto
+    che spunta la topbar della homeScreen quando si cerca di modificare un medicinale. Creare una
+    nuova route per la modifica del medicinale.
+ */
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,

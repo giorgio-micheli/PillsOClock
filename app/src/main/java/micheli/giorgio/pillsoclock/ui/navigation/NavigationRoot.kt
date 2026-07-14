@@ -17,15 +17,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
@@ -60,6 +63,8 @@ import micheli.giorgio.pillsoclock.ui.medicinali.MedicinaliScreen
 import micheli.giorgio.pillsoclock.ui.settings.SettingsScreen
 import micheli.giorgio.pillsoclock.ui.theme.onBackgroundDark
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.collections.listOf
 
 
@@ -102,13 +107,14 @@ fun NavigationRoot() {
                 exit = scaleOut(tween(200)) + fadeOut(tween(200))
             ) {
                 ExtendedFloatingActionButton(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = CircleShape,
                     onClick = { backStack.addToBackstack(Routes.AddMedicine()) }
                 ) {
                     Icon(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.padding(vertical = 24.dp).size(28.dp),
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Aggiungi mediciale"
+                        contentDescription = "Aggiungi mediciale",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
@@ -178,10 +184,7 @@ fun NavigationRoot() {
                         )
                     }
                     is Routes.FrequenzaGiorno -> NavEntry(key) {
-                        FrequenzaGiornoScreen(
-                            data = LocalDate.ofEpochDay(key.epochDay),
-                            onBack = { backStack.removeFromBackstack() }
-                        )
+                        FrequenzaGiornoScreen(LocalDate.ofEpochDay(key.epochDay))
                     }
                     else -> NavEntry(Unit) {
 
@@ -226,25 +229,26 @@ fun SelectTopBar(
 
         when (currentRoute) {
             is Routes.Home, is Routes.AddMedicine -> IntestazioneHome(onNavigateToSettings)
-            is Routes.Settings, is Routes.Frequenza, is Routes.Medicinali -> {
+            is Routes.Settings, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
 
                 val title = when (currentRoute) {
                     is Routes.Settings -> "Settings"
                     is Routes.Frequenza -> "Frequenza"
                     is Routes.Medicinali -> "Medicinali"
-                    else -> null
+                    is Routes.FrequenzaGiorno -> {
+                        val formatterData = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
+                        LocalDate.ofEpochDay(currentRoute.epochDay).format(formatterData).replaceFirstChar { it.uppercase() }
+                    }
                 }
 
-                if (title != null) {
-                    TopAppBar(
-                        title = { Text(title) },
-                        navigationIcon = {
-                            IconButton(onClick = onBack) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                            }
+                TopAppBar(
+                    title = { Text(title) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
                         }
-                    )
-                }
+                    }
+                )
             }
         }
     }
