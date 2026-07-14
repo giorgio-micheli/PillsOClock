@@ -1,31 +1,21 @@
 package micheli.giorgio.pillsoclock.ui.navigation
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,25 +24,22 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.example.nav3recipes.bottomsheet.BottomSheetScene
 import com.example.nav3recipes.bottomsheet.BottomSheetSceneStrategy
-import kotlinx.serialization.Serializable
 import micheli.giorgio.pillsoclock.LocalSnackbarHostState
 import micheli.giorgio.pillsoclock.ui.addMedicine.AddMedicinale
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaGiornoScreen
@@ -61,7 +48,6 @@ import micheli.giorgio.pillsoclock.ui.home.HomeScreen
 import micheli.giorgio.pillsoclock.ui.home.IntestazioneHome
 import micheli.giorgio.pillsoclock.ui.medicinali.MedicinaliScreen
 import micheli.giorgio.pillsoclock.ui.settings.SettingsScreen
-import micheli.giorgio.pillsoclock.ui.theme.onBackgroundDark
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -91,6 +77,19 @@ fun NavigationRoot() {
     // Necessario per avere il bottom sheet dialog come destinazione di Navigation3
     val sceneStrategies = remember { listOf(BottomSheetSceneStrategy<Any>()) }
 
+    val fabVisible by remember {
+        derivedStateOf { backStack.lastOrNull() is Routes.Home }
+    }
+    val scale by animateFloatAsState(
+        targetValue = if (fabVisible) 1f else 0f,
+        animationSpec = if (fabVisible) {
+            tween(durationMillis = 300)
+        } else {
+            tween(durationMillis = 200)
+        },
+        label = "fabScaleAlpha"
+    )
+
     Scaffold(
         topBar = {
             SelectTopBar(
@@ -101,23 +100,31 @@ fun NavigationRoot() {
         },
         floatingActionButton = {
 
-            AnimatedVisibility(
-                visible = backStack.lastOrNull() is Routes.Home,
-                enter = scaleIn(tween(300)) + fadeIn(tween(300)),
-                exit = scaleOut(tween(200)) + fadeOut(tween(200))
+//            AnimatedVisibility(
+//                visible = backStack.lastOrNull() is Routes.Home,
+//                enter = scaleIn(tween(300)) + fadeIn(tween(300)),
+//                exit = scaleOut(tween(200)) + fadeOut(tween(200))
+//            ) {
+            FloatingActionButton(
+                modifier = Modifier
+                    .size(72.dp)
+                    .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                },
+                shape = CircleShape,
+                onClick = dropUnlessResumed { backStack.addToBackstack(Routes.AddMedicine()) }
             ) {
-                ExtendedFloatingActionButton(
-                    shape = CircleShape,
-                    onClick = { backStack.addToBackstack(Routes.AddMedicine()) }
-                ) {
-                    Icon(
-                        modifier = Modifier.padding(vertical = 24.dp).size(28.dp),
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Aggiungi mediciale",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                Icon(
+                    modifier = Modifier.size(32.dp),
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Aggiungi mediciale",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
+           // }
         },
         snackbarHost = {
             SnackbarHost(hostState = LocalSnackbarHostState.current)
@@ -127,7 +134,7 @@ fun NavigationRoot() {
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             backStack = backStack,
             onBack = { backStack.removeFromBackstack() },
-            sceneStrategies = sceneStrategies,
+//            sceneStrategies = sceneStrategies,
             entryDecorators = listOf(
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator()
@@ -161,12 +168,18 @@ fun NavigationRoot() {
                     }
                     is Routes.AddMedicine -> NavEntry(
                         key,
-                        metadata = BottomSheetSceneStrategy.bottomSheet()
+//                        metadata = BottomSheetSceneStrategy.bottomSheet()
                     ) {
-                        AddMedicinale(idMedicinale = key.idMedicinale)
+                        AddMedicinale(
+                            idMedicinale = key.idMedicinale,
+                            onDismiss = { backStack.removeFromBackstack() }
+                        )
                     }
                     is Routes.Medicinali -> NavEntry(key) {
                         MedicinaliScreen(
+                            onNavigateToAddMedicinaleScreen = {
+                                backStack.addToBackstack(Routes.AddMedicine())
+                            },
                             onModificaMedicinaleClick = { idMedicinale ->
                                 backStack.addToBackstack(Routes.AddMedicine(idMedicinale))
                             }
@@ -228,13 +241,14 @@ fun SelectTopBar(
     ) { currentRoute ->
 
         when (currentRoute) {
-            is Routes.Home, is Routes.AddMedicine -> IntestazioneHome(onNavigateToSettings)
-            is Routes.Settings, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
+            is Routes.Home -> IntestazioneHome(onNavigateToSettings)
+            is Routes.AddMedicine, is Routes.Settings, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
 
                 val title = when (currentRoute) {
-                    is Routes.Settings -> "Settings"
+                    is Routes.Settings -> "Impostazioni"
                     is Routes.Frequenza -> "Frequenza"
                     is Routes.Medicinali -> "Medicinali"
+                    is Routes.AddMedicine -> "Nuovo medicinale"
                     is Routes.FrequenzaGiorno -> {
                         val formatterData = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
                         LocalDate.ofEpochDay(currentRoute.epochDay).format(formatterData).replaceFirstChar { it.uppercase() }

@@ -28,10 +28,19 @@ interface AssunzioniPrevisteDao {
 
     // --- query per lo storico ---
 
-    @Query("SELECT DISTINCT data FROM assunzioni_previste WHERE data BETWEEN :dataInizio AND :dataFine AND id_orario_assunzione IN " +
-            "(SELECT id FROM orari_assunzioni WHERE id_piano_assunzione IN " +
-            "(SELECT id FROM piani_assunzioni WHERE id_medicinale IN " +
-            "(SELECT id FROM medicinali WHERE id_utente = :idUtente)))")
+//    @Query("SELECT DISTINCT data FROM assunzioni_previste WHERE data BETWEEN :dataInizio AND :dataFine AND id_orario_assunzione IN " +
+//            "(SELECT id FROM orari_assunzioni WHERE id_piano_assunzione IN " +
+//            "(SELECT id FROM piani_assunzioni WHERE id_medicinale IN " +
+//            "(SELECT id FROM medicinali WHERE id_utente = :idUtente)))")
+    @Query(
+    """
+    SELECT DISTINCT data FROM assunzioni_previste ap
+    INNER JOIN assunzioni_effettuate ae ON ap.id = ae.id_assunzione_prevista
+    WHERE data BETWEEN :dataInizio AND :dataFine AND id_orario_assunzione IN
+    (SELECT id FROM orari_assunzioni WHERE id_piano_assunzione IN
+    (SELECT id FROM piani_assunzioni WHERE id_medicinale IN 
+    (SELECT id FROM medicinali WHERE id_utente = :idUtente)))
+    """)
     fun getGiorniConAssunzioni(idUtente: Int, dataInizio: LocalDate, dataFine: LocalDate): Flow<List<LocalDate>>
 
     // --- query di servizio per la generazione giornaliera ---

@@ -1,5 +1,9 @@
 package micheli.giorgio.pillsoclock.ui.medicinali
 
+import android.R.attr.bottom
+import android.R.attr.end
+import android.R.attr.start
+import android.R.attr.top
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
@@ -8,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -65,9 +70,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.material3.ButtonColors
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester.Companion.createRefs
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.NonDisposableHandle.parent
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
@@ -84,7 +97,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun MedicinaliScreen(
     modifier: Modifier = Modifier,
-    onModificaMedicinaleClick: (Int) -> Unit
+    onModificaMedicinaleClick: (Int) -> Unit,
+    onNavigateToAddMedicinaleScreen: () -> Unit
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as PillsOClockApp
@@ -101,6 +115,7 @@ fun MedicinaliScreen(
     Medicinali(
         modifier = modifier,
         uiState = uiState,
+        onNavigateToAddMedicinaleScreen = onNavigateToAddMedicinaleScreen,
         onModificaMedicinaleClick = onModificaMedicinaleClick,
         onToggleAttivoClick = medicinaliViewModel::onToggleAttivoClick,
         onEliminaClick = medicinaliViewModel::onEliminaClick
@@ -112,6 +127,7 @@ fun MedicinaliScreen(
 fun Medicinali(
     modifier: Modifier = Modifier,
     uiState: MedicinaliUiState,
+    onNavigateToAddMedicinaleScreen: () -> Unit,
     onModificaMedicinaleClick: (Int) -> Unit,
     onToggleAttivoClick: (Medicinale) -> Unit,
     onEliminaClick: (Medicinale) -> Unit
@@ -131,8 +147,7 @@ fun Medicinali(
             MedicinaliVuoto(
                 modifier = Modifier
                     .fillMaxSize(),
-                onAggiungiClick = { }
-                //TODO: pensare come implementarlo o rimuoverlo
+                onAggiungiClick = onNavigateToAddMedicinaleScreen
             )
         }
 
@@ -162,29 +177,55 @@ private fun MedicinaliVuoto(
     modifier: Modifier = Modifier,
     onAggiungiClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    ConstraintLayout(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp)
     ) {
-        Text(
-            text = "Nessun medicinale",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = onAggiungiClick, shape = RoundedCornerShape(50)) {
-            Text("Aggiungi medicinale")
+        val (image, content) = createRefs()
+
+        Column(
+            modifier = Modifier.constrainAs(content) {
+                top.linkTo(parent.top)
+                bottom.linkTo(parent.bottom)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Nessun medicinale",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(16.dp))
+            OutlinedButton(onClick = onAggiungiClick, shape = RoundedCornerShape(50)) {
+                Text("Aggiungi medicinale")
+            }
         }
+
+        Image(
+            modifier = Modifier
+                .size(64.dp)
+                .constrainAs(image) {
+                    bottom.linkTo(content.top, margin = 16.dp)
+                    start.linkTo(content.start)
+                    end.linkTo(content.end)
+                },
+            painter = painterResource(R.drawable.pill_box),
+            contentDescription = null,
+            contentScale = ContentScale.Fit
+        )
     }
 }
 
@@ -232,14 +273,16 @@ private fun MedicinaleCard(
     val scaduto = medicinale.dataFine?.isBefore(LocalDate.now()) == true
     val inGrigio = !medicinale.attivo || scaduto
 
+    val shape = RoundedCornerShape(20.dp)
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
             .combinedClickable(
                 onClick = { if (!confermaEliminazioneVisibile) onClick() },
                 onLongClick = { confermaEliminazioneVisibile = true }
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = if (confermaEliminazioneVisibile) {
                 MaterialTheme.colorScheme.errorContainer
@@ -252,7 +295,8 @@ private fun MedicinaleCard(
                 MaterialTheme.colorScheme.onSurface
             }
         ),
-        elevation = CardDefaults.cardElevation(0.dp)
+        border = BorderStroke(2.dp, if (confermaEliminazioneVisibile) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         AnimatedContent(
             targetState = confermaEliminazioneVisibile,
@@ -392,7 +436,13 @@ private fun RigaConfermaEliminazione(
         ) {
             TextButton(
                 modifier = Modifier.weight(1f),
-                onClick = onAnnulla
+                onClick = onAnnulla,
+                colors = ButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    Color.White,
+                    Color.White
+                )
             ) {
                 Text("Annulla")
             }
@@ -487,6 +537,7 @@ fun MedicinaliScreenPreview() {
                 ),
                 isLoading = false
             ),
+            onNavigateToAddMedicinaleScreen = {},
             onModificaMedicinaleClick = {},
             onToggleAttivoClick = {},
             onEliminaClick = {}
@@ -500,6 +551,7 @@ fun MedicinaliScreenVuotaPreview() {
     AppTheme {
         Medicinali(
             uiState = MedicinaliUiState(isLoading = false),
+            onNavigateToAddMedicinaleScreen = {},
             onModificaMedicinaleClick = {},
             onToggleAttivoClick = {},
             onEliminaClick = {}

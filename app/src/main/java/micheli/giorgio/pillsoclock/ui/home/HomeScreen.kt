@@ -100,13 +100,19 @@ TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi son
 
 //TODO: sistemare posizione snackbar che collide con il FAB nella homeScreen
 
-//TODO: sistemare ombra FAB che appare scattosamente poco dopo che è apparso il FAB
-
 /*
 TODO: cambiare destinazione per la "modifica medicinale", far apparire la schermata in un
     single pane classico invece che nel bottom sheet dialog. Sistemare di conseguenza anche il fatto
     che spunta la topbar della homeScreen quando si cerca di modificare un medicinale. Creare una
     nuova route per la modifica del medicinale.
+ */
+
+/*
+TODO: bug quando non ho nessun medicinale e ne aggiungo uno che però ha orari ormai già passati
+ */
+
+/*
+TODO: Il FAB a volte smette di ricevere il click
  */
 @Composable
 fun HomeScreen(
@@ -481,7 +487,7 @@ private fun AzioneRapida(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
         ),
-        elevation = CardDefaults.cardElevation(0.dp)
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Column(
             modifier = Modifier
@@ -705,9 +711,12 @@ private fun ProssimaAssunzioneCard(
                         textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = onAggiungiClick, shape = RoundedCornerShape(50)) {
-                        Text("Aggiungi medicinale")
-                    }
+                    Image(
+                        modifier = Modifier.size(64.dp),
+                        painter = painterResource(R.drawable.no_task),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit
+                    )
                 }
             }
         }

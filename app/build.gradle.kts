@@ -50,7 +50,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -77,6 +76,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.core)
     // Workmanager, componente di Jetpack
     implementation(libs.androidx.work.runtime.ktx)
+    // Constraint layout utilizzato per lo stato vuoto della schermata "Medicinali"
+    implementation(libs.androidx.constraintlayout.compose)
+    // API Splashscreen di android
+    implementation(libs.androidx.core.splashscreen)
 }
 
 ksp {

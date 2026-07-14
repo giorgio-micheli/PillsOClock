@@ -7,6 +7,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,6 +19,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -122,11 +125,14 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddMedicinale(idMedicinale: Int? = null) {
+fun AddMedicinale(
+    idMedicinale: Int? = null,
+    onDismiss: () -> Unit
+) {
 
     val context = LocalContext.current
     val app = context.applicationContext as PillsOClockApp
-    val dismiss = LocalBottomSheetDismiss.current
+//    val dismiss = LocalBottomSheetDismiss.current
 
     val addMedicinaleViewModel: AddMedicinaleViewModel = viewModel(
         factory = AddMedicinaleViewModelFactory(
@@ -152,7 +158,7 @@ fun AddMedicinale(idMedicinale: Int? = null) {
         onDataInizioChange = addMedicinaleViewModel::onDataInizioChange,
         onDataFineChange = addMedicinaleViewModel::onDataFineChange,
         onSalvaClick = addMedicinaleViewModel::onSave,
-        onDismiss = dismiss
+        onDismiss = onDismiss
     )
 }
 
@@ -181,14 +187,13 @@ private fun AggiungiMedicinaleContent(
         modifier = Modifier.fillMaxWidth()
     ) {
         // Header fisso: fuori dal Column scrollabile, resta sempre visibile
-        SheetHeader(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 20.dp),
-            isModifica = uiState.isModifica,
-            onDismiss = onDismiss
-        )
+//        SheetHeader(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 20.dp)
+//                .padding(bottom = 20.dp),
+//            isModifica = uiState.isModifica
+//        )
 
         // Tutto il resto scrolla in questo Column interno
         Column(
@@ -243,31 +248,37 @@ private fun AggiungiMedicinaleContent(
             }
 
             SezioneCard(titolo = "Frequenza") {
-                SegmentedSelectorFrequenza(
-                    selezionato = uiState.tipoFrequenza,
-                    onSelezionato = onTipoFrequenzaChange
-                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(
+                        if (uiState.tipoFrequenza == TipoFrequenza.GIORNALIERA) 0.dp else 12.dp
+                    )
+                ) {
+                    SegmentedSelectorFrequenza(
+                        selezionato = uiState.tipoFrequenza,
+                        onSelezionato = onTipoFrequenzaChange
+                    )
 
-                AnimatedContent(
-                    targetState = uiState.tipoFrequenza,
-                    transitionSpec = {
-                        (fadeIn() + expandVertically()) togetherWith
-                                (fadeOut() + shrinkVertically()) using
-                                SizeTransform(clip = false)
-                    },
-                    label = "frequenzaContent"
-                ) { tipo ->
-                    when (tipo) {
-                        TipoFrequenza.OGNI_N_GIORNI -> SezioneIntervalloGiorni(
-                            intervallo = uiState.intervalloGiorni,
-                            onIntervalloChange = onIntervalloGiorniChange
-                        )
-                        TipoFrequenza.GIORNI_SETTIMANA -> SezioneGiorniSettimana(
-                            giorniSelezionati = uiState.giorniSettimana,
-                            onGiornoToggle = onGiornoSettimanaToggle,
-                            errore = uiState.giorniSettimanaError
-                        )
-                        else -> Unit // nessun contenuto extra per altri tipi, se esistono
+                    AnimatedContent(
+                        targetState = uiState.tipoFrequenza,
+                        transitionSpec = {
+                            (fadeIn(tween(220))) togetherWith
+                                    (fadeOut(tween(150))) using
+                                    SizeTransform(clip = false)
+                        },
+                        label = "frequenzaContent"
+                    ) { tipo ->
+                        when (tipo) {
+                            TipoFrequenza.OGNI_N_GIORNI -> SezioneIntervalloGiorni(
+                                intervallo = uiState.intervalloGiorni,
+                                onIntervalloChange = onIntervalloGiorniChange
+                            )
+                            TipoFrequenza.GIORNI_SETTIMANA -> SezioneGiorniSettimana(
+                                giorniSelezionati = uiState.giorniSettimana,
+                                onGiornoToggle = onGiornoSettimanaToggle,
+                                errore = uiState.giorniSettimanaError
+                            )
+                            else -> Unit // nessun contenuto extra per altri tipi, se esistono
+                        }
                     }
                 }
             }
@@ -358,49 +369,41 @@ private fun AggiungiMedicinaleContent(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun SheetHeader(
+fun SheetHeader(
     modifier: Modifier = Modifier,
-    isModifica: Boolean = false,
-    onDismiss: () -> Unit
+    isModifica: Boolean = false
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             Text(
                 if (isModifica) "Modifica medicinale" else "Nuovo medicinale",
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontWeight = FontWeight.Bold
             )
             Text(
                 if (isModifica) "Aggiorna i dettagli del promemoria" else "Compila i dettagli per aggiungere un promemoria",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-        IconButton(
-            onClick = dropUnlessResumed {
-                onDismiss()
-            },
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .size(36.dp)
-        ) {
-            Icon(
-                Icons.Default.Close,
-                contentDescription = "Chiudi",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(16.dp)
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
     }
 }
 
+
+@Preview(showBackground = true)
+@Composable
+fun SheetHeaderPreview() {
+    AppTheme {
+        SheetHeader()
+    }
+}
 // ---------------------------------------------------------------------------
 // Card sezione
 // ---------------------------------------------------------------------------
@@ -720,11 +723,11 @@ private fun SezioneIntervalloGiorni(
     onIntervalloChange: (Int) -> Unit
 ) {
     Column(
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = 8.dp, start = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
