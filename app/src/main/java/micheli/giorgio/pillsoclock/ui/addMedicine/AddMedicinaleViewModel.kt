@@ -29,6 +29,7 @@ data class AggiungiMedicinaleUiState(
     val dataInizio: LocalDate = LocalDate.now(),
     val dataFine: LocalDate? = null,
     val isLoading: Boolean = false,
+    val isModifica: Boolean = false,
     val errorMessage: String? = null,
     val salvatagioCompletato: Boolean = false,
     // errori di validazione per singolo campo
@@ -40,11 +41,58 @@ data class AggiungiMedicinaleUiState(
 class AddMedicinaleViewModel(
     val medicinaleRepository: MedicinaleRepository,
     val utenteRepository: UtenteRepository,
-    val assunzioneRepository: AssunzioneRepository
+    val assunzioneRepository: AssunzioneRepository,
+    private val idMedicinale: Int? = null
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(AggiungiMedicinaleUiState())
+    private val _uiState = MutableStateFlow(AggiungiMedicinaleUiState(isModifica = idMedicinale != null))
     val uiState = _uiState.asStateFlow()
+
+    // Dati del medicinale in modifica non esposti alla UI ma necessari per l'update:
+    // idUtente e attivo non sono modificabili dal bottom sheet (attivo si gestisce
+    // dalla lista con lo switch), ma vanno preservati quando si salva.
+    private var idPianoInModifica: Int? = null
+    private var idUtenteInModifica: Int? = null
+    private var attivoInModifica: Boolean = true
+
+    init {
+        if (idMedicinale != null) {
+            caricaMedicinaleEsistente(idMedicinale)
+        }
+    }
+
+    private fun caricaMedicinaleEsistente(id: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isLoading = true) }
+            val medicinaleConPiano = medicinaleRepository.getMedicinaleConPianoEOrari(id).firstOrNull()
+            if (medicinaleConPiano == null) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "Medicinale non trovato") }
+                return@launch
+            }
+
+            val medicinale = medicinaleConPiano.medicinale
+            val pianoConOrari = medicinaleConPiano.piani.firstOrNull()
+
+            idUtenteInModifica = medicinale.idUtente
+            attivoInModifica = medicinale.attivo
+            idPianoInModifica = pianoConOrari?.piano?.id
+
+            _uiState.update {
+                it.copy(
+                    nome = medicinale.nome,
+                    dosaggio = medicinale.dosaggio ?: "",
+                    note = medicinale.note ?: "",
+                    orari = pianoConOrari?.orari?.map { orario -> orario.orario } ?: emptyList(),
+                    tipoFrequenza = pianoConOrari?.piano?.tipoFrequenza ?: TipoFrequenza.GIORNALIERA,
+                    intervalloGiorni = pianoConOrari?.piano?.intervalloGiorni ?: 2,
+                    giorniSettimana = pianoConOrari?.piano?.giorniSettimana ?: emptyList(),
+                    dataInizio = medicinale.dataInizio,
+                    dataFine = medicinale.dataFine,
+                    isLoading = false
+                )
+            }
+        }
+    }
 
     fun onNomeChange(value: String) {
         _uiState.update { it.copy(nome = value) }
@@ -105,34 +153,7 @@ class AddMedicinaleViewModel(
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                val utente = utenteRepository.getUtente().firstOrNull()
-                if (utente == null) {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "Utente non trovato") }
-                    return@launch
-                }
-
                 val stato = _uiState.value
-
-                // Creo l'oggetto Medicinale con i dati presenti nello stato del viewModel
-                val medicinale = Medicinale(
-                    id = 0,
-                    idUtente = utente.id,
-                    nome = stato.nome.trim(),
-                    dosaggio = stato.dosaggio.trim().ifEmpty { null },
-                    note = stato.note.trim().ifEmpty { null },
-                    attivo = true,
-                    dataInizio = stato.dataInizio,
-                    dataFine = stato.dataFine
-                )
-                // Creo l'oggetto PianoAssunzione con i dati presenti nello stato del ViewModel
-                val piano = PianoAssunzione(
-                    id = 0,
-                    idMedicinale = 0,
-                    tipoFrequenza = stato.tipoFrequenza,
-                    intervalloGiorni = if (stato.tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) stato.intervalloGiorni else null,
-                    giorniSettimana = if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) stato.giorniSettimana else null,
-                    dataInizio = stato.dataInizio
-                )
                 // Creo la lista di orari utilizzando quelli presenti nello stato del viewModel
                 val orari = stato.orari.map { orario ->
                     OrarioAssunzione(
@@ -141,22 +162,73 @@ class AddMedicinaleViewModel(
                         orario = orario
                     )
                 }
-                // Inserisco tutto nel database
-                medicinaleRepository.inserisciMedicinaleConPianoEOrari(medicinale, piano, orari)
 
+                if (idMedicinale != null) {
+                    // Modalità modifica: aggiorno il medicinale e il piano esistenti,
+                    // preservando idUtente e attivo (non gestiti da questo bottom sheet).
+                    val medicinale = Medicinale(
+                        id = idMedicinale,
+                        idUtente = idUtenteInModifica ?: return@launch,
+                        nome = stato.nome.trim(),
+                        dosaggio = stato.dosaggio.trim().ifEmpty { null },
+                        note = stato.note.trim().ifEmpty { null },
+                        attivo = attivoInModifica,
+                        dataInizio = stato.dataInizio,
+                        dataFine = stato.dataFine
+                    )
+                    val piano = PianoAssunzione(
+                        id = idPianoInModifica ?: return@launch,
+                        idMedicinale = idMedicinale,
+                        tipoFrequenza = stato.tipoFrequenza,
+                        intervalloGiorni = if (stato.tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) stato.intervalloGiorni else null,
+                        giorniSettimana = if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) stato.giorniSettimana else null,
+                        dataInizio = stato.dataInizio
+                    )
+                    medicinaleRepository.aggiornaMedicinale(medicinale)
+                    medicinaleRepository.aggiornaPianoEOrari(piano, orari)
+                } else {
+                    val utente = utenteRepository.getUtente().firstOrNull()
+                    if (utente == null) {
+                        _uiState.update { it.copy(isLoading = false, errorMessage = "Utente non trovato") }
+                        return@launch
+                    }
 
-                if (medicinale.dataInizio == LocalDate.now()) {
+                    // Creo l'oggetto Medicinale con i dati presenti nello stato del viewModel
+                    val medicinale = Medicinale(
+                        id = 0,
+                        idUtente = utente.id,
+                        nome = stato.nome.trim(),
+                        dosaggio = stato.dosaggio.trim().ifEmpty { null },
+                        note = stato.note.trim().ifEmpty { null },
+                        attivo = true,
+                        dataInizio = stato.dataInizio,
+                        dataFine = stato.dataFine
+                    )
+                    // Creo l'oggetto PianoAssunzione con i dati presenti nello stato del ViewModel
+                    val piano = PianoAssunzione(
+                        id = 0,
+                        idMedicinale = 0,
+                        tipoFrequenza = stato.tipoFrequenza,
+                        intervalloGiorni = if (stato.tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) stato.intervalloGiorni else null,
+                        giorniSettimana = if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) stato.giorniSettimana else null,
+                        dataInizio = stato.dataInizio
+                    )
+                    // Inserisco tutto nel database
+                    medicinaleRepository.inserisciMedicinaleConPianoEOrari(medicinale, piano, orari)
 
-                    val medicinali = medicinaleRepository
-                        .getMedicinaliAttiviConPianoEOrari(utente.id)
-                        .firstOrNull() ?: emptyList()
+                    if (medicinale.dataInizio == LocalDate.now()) {
 
-                    if (medicinali.isNotEmpty()) {
-                        assunzioneRepository.generaAssunzioniPerGiorno(
-                            utente.id,
-                            LocalDate.now(),
-                            medicinali
-                        )
+                        val medicinali = medicinaleRepository
+                            .getMedicinaliAttiviConPianoEOrari(utente.id)
+                            .firstOrNull() ?: emptyList()
+
+                        if (medicinali.isNotEmpty()) {
+                            assunzioneRepository.generaAssunzioniPerGiorno(
+                                utente.id,
+                                LocalDate.now(),
+                                medicinali
+                            )
+                        }
                     }
                 }
 

@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit
  * ogni Context in Android mantiene un riferimento al Context dell'applicazione che lo contiene.
  */
 
+// Estende Application e implementa Configuration.Provider
 class PillsOClockApp : Application(), Configuration.Provider {
 
     val database: AppDatabase by lazy {

@@ -38,6 +38,10 @@ class MedicinaleRepositoryImpl (
         medicinaleDao.getMedicinaliAttiviConPianoEOrari(idUtente)
             .map { medicinali -> medicinali.map { it.toDomain() } }
 
+    override fun getTuttiMedicinaliConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>> =
+        medicinaleDao.getTuttiMedicinaliConPianoEOrari(idUtente)
+            .map { medicinali -> medicinali.map { it.toDomain() } }
+
     // --- scrittura ---
 
     @Transaction
@@ -55,6 +59,9 @@ class MedicinaleRepositoryImpl (
         )
     }
 
+    override suspend fun aggiornaMedicinale(medicinale: Medicinale) =
+        medicinaleDao.update(medicinale.toEntity())
+
     @Transaction
     override suspend fun aggiornaPianoEOrari(
         piano: PianoAssunzione,
@@ -69,6 +76,9 @@ class MedicinaleRepositoryImpl (
 
     override suspend fun disattivaMedicinale(id: Int) =
         medicinaleDao.disattiva(id)
+
+    override suspend fun attivaMedicinale(id: Int) =
+        medicinaleDao.attiva(id)
 
     override suspend fun eliminaMedicinale(medicinale: Medicinale) =
         medicinaleDao.delete(medicinale.toEntity())

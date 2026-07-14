@@ -122,7 +122,7 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddMedicinale() {
+fun AddMedicinale(idMedicinale: Int? = null) {
 
     val context = LocalContext.current
     val app = context.applicationContext as PillsOClockApp
@@ -132,6 +132,7 @@ fun AddMedicinale() {
         factory = AddMedicinaleViewModelFactory(
             app.medicinaleRepository,
             app.utenteRepository,
+            idMedicinale,
             app.assunzioneRepository
         )
     )
@@ -185,6 +186,7 @@ private fun AggiungiMedicinaleContent(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 20.dp),
+            isModifica = uiState.isModifica,
             onDismiss = onDismiss
         )
 
@@ -210,7 +212,7 @@ private fun AggiungiMedicinaleContent(
                         Icon(
                             Icons.Default.Edit,
                             contentDescription = null,
-                            tint = if (uiState.nomeError) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface,
+                            tint = if (uiState.nomeError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -304,18 +306,18 @@ private fun AggiungiMedicinaleContent(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp
                     )
                 } else {
                     Text(
-                        "Salva medicinale",
+                        if (uiState.isModifica) "Salva modifiche" else "Salva medicinale",
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
@@ -336,12 +338,12 @@ private fun AggiungiMedicinaleContent(
                         Icon(
                             Icons.Outlined.Info,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onError,
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
                             uiState.errorMessage,
-                            color = MaterialTheme.colorScheme.onError,
+                            color = MaterialTheme.colorScheme.error,
                             fontSize = 13.sp
                         )
                     }
@@ -358,6 +360,7 @@ private fun AggiungiMedicinaleContent(
 @Composable
 private fun SheetHeader(
     modifier: Modifier = Modifier,
+    isModifica: Boolean = false,
     onDismiss: () -> Unit
 ) {
     Row(
@@ -367,13 +370,13 @@ private fun SheetHeader(
     ) {
         Column {
             Text(
-                "Nuovo medicinale",
+                if (isModifica) "Modifica medicinale" else "Nuovo medicinale",
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             )
             Text(
-                "Compila i dettagli per aggiungere un promemoria",
+                if (isModifica) "Aggiorna i dettagli del promemoria" else "Compila i dettagli per aggiungere un promemoria",
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
@@ -467,7 +470,7 @@ private fun CampoTestoModerno(
                 errorBorderColor = MaterialTheme.colorScheme.error,
                 focusedLabelColor = MaterialTheme.colorScheme.primary,
                 unfocusedLabelColor = MaterialTheme.colorScheme.secondary,
-                errorLabelColor = MaterialTheme.colorScheme.onError,
+                errorLabelColor = MaterialTheme.colorScheme.error,
                 cursorColor = MaterialTheme.colorScheme.primary,
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent
@@ -476,7 +479,7 @@ private fun CampoTestoModerno(
         if (errore && messaggioErrore.isNotEmpty()) {
             Text(
                 messaggioErrore,
-                color = MaterialTheme.colorScheme.onError,
+                color = MaterialTheme.colorScheme.error,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(start = 4.dp)
             )
@@ -510,13 +513,20 @@ private fun SezioneOrari(
                 TimePicker(
                     state = timePickerState,
                     colors = TimePickerDefaults.colors(
-                        clockDialColor = MaterialTheme.colorScheme.surface,
-                        clockDialSelectedContentColor = Color.White,
-                        clockDialUnselectedContentColor = MaterialTheme.colorScheme.primary,
+                        clockDialColor = MaterialTheme.colorScheme.surfaceVariant,
+                        clockDialSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                        clockDialUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         selectorColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        periodSelectorBorderColor = MaterialTheme.colorScheme.outline,
                         periodSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary,
+                        periodSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        periodSelectorSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                        periodSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         timeSelectorSelectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        timeSelectorSelectedContentColor = MaterialTheme.colorScheme.primary
+                        timeSelectorUnselectedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        timeSelectorSelectedContentColor = MaterialTheme.colorScheme.primary,
+                        timeSelectorUnselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
             },
@@ -648,6 +658,7 @@ private fun SegmentedSelectorFrequenza(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
@@ -764,8 +775,9 @@ private fun SezioneIntervalloGiorni(
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTickColor = MaterialTheme.colorScheme.onPrimary
+                activeTickColor = MaterialTheme.colorScheme.onPrimary,
+                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                inactiveTickColor = MaterialTheme.colorScheme.primary
             )
         )
         Row(
@@ -828,7 +840,7 @@ private fun SezioneGiorniSettimana(
                 ) {
                     Text(
                         etichetta,
-                        color = if (isSelected) Color.White else if (errore) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else if (errore) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                     )
@@ -937,7 +949,7 @@ private fun SezioneDatePicker(
                     if (!it) onDataFineChange(null)
                 },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                     checkedTrackColor = MaterialTheme.colorScheme.primary,
                     uncheckedThumbColor = MaterialTheme.colorScheme.secondary,
                     uncheckedTrackColor = MaterialTheme.colorScheme.surface,
