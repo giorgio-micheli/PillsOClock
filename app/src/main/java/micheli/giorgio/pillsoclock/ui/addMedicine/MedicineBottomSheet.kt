@@ -131,7 +131,8 @@ fun AddMedicinale() {
     val addMedicinaleViewModel: AddMedicinaleViewModel = viewModel(
         factory = AddMedicinaleViewModelFactory(
             app.medicinaleRepository,
-            app.utenteRepository
+            app.utenteRepository,
+            app.assunzioneRepository
         )
     )
 
@@ -282,6 +283,17 @@ private fun AggiungiMedicinaleContent(
             // Pulsante salva
             Button(
                 onClick = {
+                    /*
+                    TODO: se l'orario del nuovo medicinale è già passato
+                    non deve apparire nella lista nella home screen, sennò verrebbe
+                    segnato come saltato. La data di inizio deve quindi essere forzatamente
+                    quella di domani, non deve essere selezionabile quella di oggi nè i giorni passati.
+                    Se l'utente imposta due orari di cui solo uno è già passato, allora bisogna aggiungere
+                    alla home screen solamente quello con orario non ancora trascorso. Aggiungere questo
+                    controllo nel repository delle assunzioni. Questo controllo farlo solamente nel metodo
+                    di generazione invocato quando si preme il tasto 'salva medicinale' non va bene
+                    fatto anche a mezzanotte dal workmanager.
+                     */
                     val saved = onSalvaClick()
                     if (saved) onDismiss()
                 },

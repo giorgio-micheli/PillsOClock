@@ -12,6 +12,7 @@ import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.domain.model.Medicinale
 import micheli.giorgio.pillsoclock.domain.model.OrarioAssunzione
 import micheli.giorgio.pillsoclock.domain.model.PianoAssunzione
+import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
@@ -38,7 +39,8 @@ data class AggiungiMedicinaleUiState(
 
 class AddMedicinaleViewModel(
     val medicinaleRepository: MedicinaleRepository,
-    val utenteRepository: UtenteRepository
+    val utenteRepository: UtenteRepository,
+    val assunzioneRepository: AssunzioneRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AggiungiMedicinaleUiState())
@@ -141,6 +143,23 @@ class AddMedicinaleViewModel(
                 }
                 // Inserisco tutto nel database
                 medicinaleRepository.inserisciMedicinaleConPianoEOrari(medicinale, piano, orari)
+
+
+                if (medicinale.dataInizio == LocalDate.now()) {
+
+                    val medicinali = medicinaleRepository
+                        .getMedicinaliAttiviConPianoEOrari(utente.id)
+                        .firstOrNull() ?: emptyList()
+
+                    if (medicinali.isNotEmpty()) {
+                        assunzioneRepository.generaAssunzioniPerGiorno(
+                            utente.id,
+                            LocalDate.now(),
+                            medicinali
+                        )
+                    }
+                }
+
                 // Notifico la UI che l'operazione asincrona è finita e che il salvataggio è stato completato
                 _uiState.update { it.copy(isLoading = false, salvatagioCompletato = true) }
             } catch (e: Exception) {
