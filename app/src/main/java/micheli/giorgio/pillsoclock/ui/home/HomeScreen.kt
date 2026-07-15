@@ -28,12 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -89,6 +88,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val DURATA_CHECK_MS = 600L
 private const val DURATA_COLLASSO_MS = 300
@@ -113,6 +113,26 @@ TODO: bug quando non ho nessun medicinale e ne aggiungo uno che però ha orari o
 
 /*
 TODO: Il FAB a volte smette di ricevere il click
+ */
+
+/*
+TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo storico nel calendario
+    quindi mi sa che dobbiamo fare una eliminazione fake con un flag "eliminato" sul database.
+ */
+
+/*
+TODO: se non ho nessuna assunzione in programma per oggi, devo cambiare il messaggio sulla homescreen,
+    non deve dire di aggiungere un medicinale per iniziare, il medicinale magari c'è già, solamente
+    oggi non è tra i giorni prefissati per assumerlo. Devo controllare se esiste già almeno un medicinale.
+ */
+
+/*
+TODO: nella schermata "Medicinali" non si capisce che premendo una volta sola su un medicinale
+  si apre la schermata per editarlo
+ */
+
+/*
+TODO: implementare datastore
  */
 @Composable
 fun HomeScreen(
@@ -314,7 +334,7 @@ fun Home(
                         SezioneTitolo(
                             testo = "PROSSIME ASSUNZIONI",
                             numero = uiState.prossimeAssunzioni.size,
-                            icon = Icons.Default.ArrowForward
+                            icon = Icons.AutoMirrored.Filled.ArrowForward
                         )
                     }
                     items(uiState.prossimeAssunzioni, key = { it.assunzionePrevista.id }) { assunzione ->
@@ -587,9 +607,9 @@ private fun ProssimaAssunzioneCard(
     fun eseguiConferma(assunzione: AssunzioneGiornaliera) {
         isConfirming = true
         scope.launch {
-            delay(DURATA_CHECK_MS)
+            delay(DURATA_CHECK_MS.milliseconds)
             onConferma(assunzione)
-            delay(200)
+            delay(200.milliseconds)
             isConfirming = false
         }
     }
@@ -798,9 +818,9 @@ private fun CardConAnimazioneAssunzione(
             if (!isConfirming) {
                 isConfirming = true
                 scope.launch {
-                    delay(DURATA_CHECK_MS)
+                    delay(DURATA_CHECK_MS.milliseconds)
                     visible = false
-                    delay(DURATA_COLLASSO_MS.toLong())
+                    delay(DURATA_COLLASSO_MS.toLong().milliseconds)
                     onConferma()
                 }
             }

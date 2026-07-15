@@ -6,6 +6,7 @@ import android.R.attr.start
 import android.R.attr.top
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -235,14 +236,18 @@ private fun MedicinaliVuoto(
  */
 @Composable
 private fun BadgePillola(attivo: Boolean) {
+
+    val color by animateColorAsState(
+        targetValue = if (attivo) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.surface,
+        animationSpec = tween(300)
+    )
+
     Box(
         modifier = Modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(
-                if (attivo) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceVariant
-            ),
+            .background(color),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -273,6 +278,18 @@ private fun MedicinaleCard(
     val scaduto = medicinale.dataFine?.isBefore(LocalDate.now()) == true
     val inGrigio = !medicinale.attivo || scaduto
 
+    val color by animateColorAsState(
+        targetValue = if (confermaEliminazioneVisibile) {
+            MaterialTheme.colorScheme.errorContainer
+        } else if (inGrigio) {
+            MaterialTheme.colorScheme.surfaceVariant
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        animationSpec = tween(300),
+        label = "Container_color_animation"
+    )
+
     val shape = RoundedCornerShape(20.dp)
     Card(
         modifier = Modifier
@@ -284,18 +301,14 @@ private fun MedicinaleCard(
             ),
         shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = if (confermaEliminazioneVisibile) {
-                MaterialTheme.colorScheme.errorContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            containerColor = color,
             contentColor = if (confermaEliminazioneVisibile) {
                 MaterialTheme.colorScheme.onErrorContainer
             } else {
                 MaterialTheme.colorScheme.onSurface
             }
         ),
-        border = BorderStroke(2.dp, if (confermaEliminazioneVisibile) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary),
+        //border = BorderStroke(2.dp, if (confermaEliminazioneVisibile) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         AnimatedContent(

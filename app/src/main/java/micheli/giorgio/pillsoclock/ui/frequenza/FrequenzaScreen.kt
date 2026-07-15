@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,7 +53,6 @@ import java.util.Locale
 @Composable
 fun FrequenzaScreen(
     modifier: Modifier = Modifier,
-    onBack: () -> Unit,
     onGiornoClick: (LocalDate) -> Unit
 ) {
     val context = LocalContext.current
@@ -70,7 +70,6 @@ fun FrequenzaScreen(
     Frequenza(
         modifier = modifier,
         uiState = uiState,
-        onBack = onBack,
         onMesePrecedenteClick = frequenzaViewModel::onMesePrecedenteClick,
         onMeseSuccessivoClick = frequenzaViewModel::onMeseSuccessivoClick,
         onGiornoClick = onGiornoClick
@@ -82,15 +81,14 @@ fun FrequenzaScreen(
 fun Frequenza(
     modifier: Modifier = Modifier,
     uiState: FrequenzaUiState,
-    onBack: () -> Unit,
     onMesePrecedenteClick: () -> Unit,
     onMeseSuccessivoClick: () -> Unit,
     onGiornoClick: (LocalDate) -> Unit
 ) {
     Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Card(
@@ -158,7 +156,7 @@ private fun SelettoreMese(
             enabled = puoAndareAvanti
         ) {
             Icon(
-                Icons.Default.ArrowForward,
+                Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = "Mese successivo",
                 tint = if (puoAndareAvanti) {
                     MaterialTheme.colorScheme.onBackground
@@ -308,7 +306,6 @@ fun FrequenzaScreenPreview() {
                     ),
                     isLoading = false
                 ),
-                onBack = {},
                 onMesePrecedenteClick = {},
                 onMeseSuccessivoClick = {},
                 onGiornoClick = {}

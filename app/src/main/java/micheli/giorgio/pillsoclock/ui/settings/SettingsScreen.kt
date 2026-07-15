@@ -35,6 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 
+/**
+    Interfaccia sealed che dichiara tutte le classi che la implementano.
+    Elenca tutti i vari settings item che possiamo trovare nella schermata delle impostazioni di quest'app
+ */
 sealed interface SettingsItem {
     data class Toggle(
         val title: String,
@@ -50,6 +54,9 @@ sealed interface SettingsItem {
     ) : SettingsItem
 }
 
+/**
+ * Classe che rappresenta lo stato di una sezione nella schermata delle impostazioni
+ */
 data class SettingsSection(
     val title: String,
     val items: List<SettingsItem>
@@ -64,6 +71,7 @@ fun SettingsScreen(
 
     var darkModeEnabled by remember { mutableStateOf(false) }
 
+    // Dichiaro e definisco le varie sezioni che saranno presenti nella schermata
     val sections = listOf(
         SettingsSection(
             title = "Generali",
@@ -80,6 +88,12 @@ fun SettingsScreen(
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ) {
+        /*
+         Per ogni sezione creo a livello UI un Header e i relativi sotto-items, distinguendoli
+         tra Toggle e Clickable. Quando aggiungeremo un'altra classe che implementa la sealed interface
+         SettingsItem allora dovremo anche aggiungere un'altra riga a questa when expression.
+         Imposto infine un divisore orizzontale per separare le varie sezioni.
+         */
         sections.forEach { section ->
             item {
                 SectionHeader(section.title)
@@ -113,7 +127,9 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun SettingsToggleRow(item: SettingsItem.Toggle) {
+private fun SettingsToggleRow(
+    item: SettingsItem.Toggle
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

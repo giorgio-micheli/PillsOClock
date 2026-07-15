@@ -19,6 +19,9 @@ import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
 import java.time.YearMonth
 
+/**
+ * Classe rappresentante lo stato della schermata 'Frequenza'
+ */
 data class FrequenzaUiState(
     val meseVisualizzato: YearMonth = YearMonth.now(),
     val giorniConAssunzioni: Set<LocalDate> = emptySet(),
@@ -31,17 +34,19 @@ class FrequenzaViewModel(
     private val utenteRepository: UtenteRepository
 ) : ViewModel() {
 
-    private val meseVisualizzato = MutableStateFlow(YearMonth.now())
+    private val meseVisualizzato = MutableStateFlow(YearMonth.now()) // Hot Flow
 
-    private val _uiState = MutableStateFlow(FrequenzaUiState())
-    val uiState: StateFlow<FrequenzaUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(FrequenzaUiState()) // Hot Flow
+    val uiState: StateFlow<FrequenzaUiState> = _uiState.asStateFlow() // Cold Flow
 
+    // Blocco di codice che viene eseguito a ogni nuova istanzazione di un oggetto FrequenzaViewModel
     init {
         osservaGiorniConAssunzioni()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun osservaGiorniConAssunzioni() {
+        // Coroutine legata allo scope del viewModel
         viewModelScope.launch(Dispatchers.IO) {
             combine(utenteRepository.getUtente(), meseVisualizzato) { utente, mese -> utente to mese }
                 .flatMapLatest { (utente, mese) ->

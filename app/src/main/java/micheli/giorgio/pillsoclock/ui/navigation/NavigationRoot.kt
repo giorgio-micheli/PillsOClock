@@ -67,7 +67,6 @@ Un NavEntry è un oggetto che contiene sia la key, sia il Composable da mostrare
 4) Il NavDisplay riceve il NavEntry e mostra il Composable a schermo.
  */
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationRoot() {
@@ -77,9 +76,11 @@ fun NavigationRoot() {
     // Necessario per avere il bottom sheet dialog come destinazione di Navigation3
     val sceneStrategies = remember { listOf(BottomSheetSceneStrategy<Any>()) }
 
+    //
     val fabVisible by remember {
         derivedStateOf { backStack.lastOrNull() is Routes.Home }
     }
+    // Riferimento costante a State<Float> reso "float" dalla keyword "by"
     val scale by animateFloatAsState(
         targetValue = if (fabVisible) 1f else 0f,
         animationSpec = if (fabVisible) {
@@ -90,8 +91,10 @@ fun NavigationRoot() {
         label = "fabScaleAlpha"
     )
 
+    // Unica Scaffold principale dell'app
     Scaffold(
         topBar = {
+            // Seleziona una topbar diversa in base alla route corrente
             SelectTopBar(
                 route = backStack.lastOrNull(),
                 onBack = { backStack.removeFromBackstack() },
@@ -130,6 +133,7 @@ fun NavigationRoot() {
             SnackbarHost(hostState = LocalSnackbarHostState.current)
         }
     ) { innerPadding ->
+        // Composable principale di Nav3
         NavDisplay(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             backStack = backStack,
@@ -139,6 +143,7 @@ fun NavigationRoot() {
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator()
             ),
+            // Transizioni custom globali, valide per tutte le schermate
             transitionSpec = {
                 fadeIn(tween(200)) togetherWith fadeOut(tween(200))
             },
@@ -190,7 +195,6 @@ fun NavigationRoot() {
                     }
                     is Routes.Frequenza -> NavEntry(key) {
                         FrequenzaScreen(
-                            onBack = { backStack.removeFromBackstack() },
                             onGiornoClick = { giorno ->
                                 backStack.addToBackstack(Routes.FrequenzaGiorno(giorno.toEpochDay()))
                             }
@@ -224,6 +228,13 @@ fun SnapshotStateList<Any>.addToBackstack(key: NavKey): Unit {
     if (this[size - 1] != key) this.add(key)
 }
 
+
+/**
+ * Funzione che ritorna una topBar e quindi un Composable diverso in base alla schermata corrente
+ * @route La destinazione corrente
+ * @onBack La lambda che permette di togliere la route corrente dal backstack e tornare alla schermata precedente
+ * @onNavigateToSettings Lambda utilizzata nella topBar della homeScreen
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectTopBar(
