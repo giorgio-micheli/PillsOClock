@@ -1,9 +1,5 @@
 package micheli.giorgio.pillsoclock.ui.medicinali
 
-import android.R.attr.bottom
-import android.R.attr.end
-import android.R.attr.start
-import android.R.attr.top
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
@@ -13,7 +9,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -34,8 +29,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -45,17 +38,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,17 +60,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.material3.ButtonColors
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester.Companion.createRefs
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.NonDisposableHandle.parent
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
@@ -118,7 +102,7 @@ fun MedicinaliScreen(
         uiState = uiState,
         onNavigateToAddMedicinaleScreen = onNavigateToAddMedicinaleScreen,
         onModificaMedicinaleClick = onModificaMedicinaleClick,
-        onToggleAttivoClick = medicinaliViewModel::onToggleAttivoClick,
+        onToggleAttivoClick = medicinaliViewModel::onToggleClick,
         onEliminaClick = medicinaliViewModel::onEliminaClick
     )
 }
@@ -134,6 +118,7 @@ fun Medicinali(
     onEliminaClick: (Medicinale) -> Unit
 ) {
     when {
+        // Stato di caricamento
         uiState.isLoading -> {
             Box(
                 modifier = Modifier
@@ -143,7 +128,7 @@ fun Medicinali(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
-
+        // Stato "nessun medicinale esistente"
         uiState.medicinali.isEmpty() -> {
             MedicinaliVuoto(
                 modifier = Modifier
@@ -154,8 +139,7 @@ fun Medicinali(
 
         else -> {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = modifier
                     .padding(horizontal = 16.dp),
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -540,21 +524,24 @@ private fun medicinaleDiProva(
 @Composable
 fun MedicinaliScreenPreview() {
     AppTheme {
-        Medicinali(
-            uiState = MedicinaliUiState(
-                medicinali = listOf(
-                    medicinaleDiProva(1, "Omeprazolo"),
-                    medicinaleDiProva(2, "Cardioaspirina", dosaggio = "100mg", tipoFrequenza = TipoFrequenza.GIORNI_SETTIMANA),
-                    medicinaleDiProva(3, "Vitamina D", attivo = false),
-                    medicinaleDiProva(4, "Antibiotico", dataFine = LocalDate.now().minusDays(3))
+        Scaffold { innerPadding ->
+            Medicinali(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                uiState = MedicinaliUiState(
+                    medicinali = listOf(
+                        medicinaleDiProva(1, "Omeprazolo"),
+                        medicinaleDiProva(2, "Cardioaspirina", dosaggio = "100mg", tipoFrequenza = TipoFrequenza.GIORNI_SETTIMANA),
+                        medicinaleDiProva(3, "Vitamina D", attivo = false),
+                        medicinaleDiProva(4, "Antibiotico", dataFine = LocalDate.now().minusDays(3))
+                    ),
+                    isLoading = false
                 ),
-                isLoading = false
-            ),
-            onNavigateToAddMedicinaleScreen = {},
-            onModificaMedicinaleClick = {},
-            onToggleAttivoClick = {},
-            onEliminaClick = {}
-        )
+                onNavigateToAddMedicinaleScreen = {},
+                onModificaMedicinaleClick = {},
+                onToggleAttivoClick = {},
+                onEliminaClick = {}
+            )
+        }
     }
 }
 
@@ -562,12 +549,15 @@ fun MedicinaliScreenPreview() {
 @Composable
 fun MedicinaliScreenVuotaPreview() {
     AppTheme {
-        Medicinali(
-            uiState = MedicinaliUiState(isLoading = false),
-            onNavigateToAddMedicinaleScreen = {},
-            onModificaMedicinaleClick = {},
-            onToggleAttivoClick = {},
-            onEliminaClick = {}
-        )
+        Scaffold() { innerPadding ->
+            Medicinali(
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                uiState = MedicinaliUiState(isLoading = false),
+                onNavigateToAddMedicinaleScreen = {},
+                onModificaMedicinaleClick = {},
+                onToggleAttivoClick = {},
+                onEliminaClick = {}
+            )
+        }
     }
 }

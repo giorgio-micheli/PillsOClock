@@ -58,6 +58,7 @@ import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 // ---------------------------------------------------------------------------
@@ -503,7 +504,15 @@ private fun SezioneOrari(
     errore: Boolean
 ) {
     var mostraTimePicker by remember { mutableStateOf(false) }
-    val timePickerState = rememberTimePickerState(is24Hour = true)
+    var dialogOpeningCounter by remember { mutableStateOf(0) }
+
+    val timePickerState = key(dialogOpeningCounter) {
+        rememberTimePickerState(
+            initialHour = LocalTime.MIDNIGHT.hour,
+            initialMinute = LocalTime.MIDNIGHT.minute,
+            is24Hour = true
+        )
+    }
 
     if (mostraTimePicker) {
         AlertDialog(
@@ -584,7 +593,10 @@ private fun SezioneOrari(
         }
 
         OutlinedButton(
-            onClick = { mostraTimePicker = true },
+            onClick = {
+                dialogOpeningCounter++
+                mostraTimePicker = true
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
@@ -878,11 +890,29 @@ private fun SezioneDatePicker(
     var mostraPickerFine by remember { mutableStateOf(false) }
     var dataFineAbilitata by remember { mutableStateOf(dataFine != null) }
 
+    val today = remember {
+        LocalDate.now(ZoneId.of("UTC"))
+            .atStartOfDay(ZoneId.of("UTC"))
+            .toInstant()
+            .toEpochMilli()
+    }
     // DatePicker dialogs
     if (mostraPickerInizio) {
+        // In questo caso voglio che venga ricordata la data impostata nel picker nel caso l'utente
+        // dovesse riaprire il dialog
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = dataInizio.toEpochDay() * 86400000L
+            initialSelectedDateMillis = dataInizio.toEpochDay() * 86400000L,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= today
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year >= LocalDate.now().year
+                }
+            }
         )
+
         DatePickerDialog(
             onDismissRequest = { mostraPickerInizio = false },
             confirmButton = {
@@ -906,9 +936,19 @@ private fun SezioneDatePicker(
 
     if (mostraPickerFine) {
         val state = rememberDatePickerState(
-            initialSelectedDateMillis = (dataFine ?: dataInizio.plusDays(30))
-                .toEpochDay() * 86400000L
+            initialSelectedDateMillis = (dataFine
+                ?.toEpochDay()?.times(86400000L)) ?: today,
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis >= today
+                }
+
+                override fun isSelectableYear(year: Int): Boolean {
+                    return year >= LocalDate.now().year
+                }
+            }
         )
+
         DatePickerDialog(
             onDismissRequest = { mostraPickerFine = false },
             confirmButton = {

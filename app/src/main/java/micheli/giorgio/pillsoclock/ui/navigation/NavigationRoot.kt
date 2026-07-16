@@ -259,7 +259,7 @@ fun SelectTopBar(
                     is Routes.Settings -> "Impostazioni"
                     is Routes.Frequenza -> "Frequenza"
                     is Routes.Medicinali -> "Medicinali"
-                    is Routes.AddMedicine -> "Nuovo medicinale"
+                    is Routes.AddMedicine -> if (currentRoute.idMedicinale != null) "Modifica medicinale" else "Nuovo medicinale"
                     is Routes.FrequenzaGiorno -> {
                         val formatterData = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
                         LocalDate.ofEpochDay(currentRoute.epochDay).format(formatterData).replaceFirstChar { it.uppercase() }

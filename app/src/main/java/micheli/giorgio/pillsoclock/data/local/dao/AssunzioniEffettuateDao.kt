@@ -30,15 +30,17 @@ interface AssunzioniEffettuateDao {
     fun getAssunzioniEffettuatePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzioneEffettuataEntity>>
 
     @Transaction
-    @Query("""
+    @Query(
+        """
         SELECT ap.*, m.nome AS nomeMedicinale, m.dosaggio AS dosaggio 
         FROM assunzioni_previste ap
         INNER JOIN orari_assunzioni oa ON ap.id_orario_assunzione = oa.id
         INNER JOIN piani_assunzioni pa ON oa.id_piano_assunzione = pa.id
         INNER JOIN medicinali m ON pa.id_medicinale = m.id
-        WHERE ap.data = :data AND m.id_utente = :idUtente
+        WHERE ap.data = :data AND m.id_utente = :idUtente AND m.attivo = 1
         ORDER BY ap.orario_previsto ASC
-    """)
+    """
+    )
     fun getAssunzioniGiornaliere(
         idUtente: Int,
         data: LocalDate

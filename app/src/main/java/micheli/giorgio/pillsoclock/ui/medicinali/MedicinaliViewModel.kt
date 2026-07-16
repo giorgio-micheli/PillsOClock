@@ -63,7 +63,7 @@ class MedicinaliViewModel(
         }
     }
 
-    fun onToggleAttivoClick(medicinale: Medicinale) {
+    fun onToggleClick(medicinale: Medicinale) {
         viewModelScope.launch(Dispatchers.IO) {
             if (medicinale.attivo) {
                 medicinaleRepository.disattivaMedicinale(medicinale.id)
