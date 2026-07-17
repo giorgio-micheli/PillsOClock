@@ -289,6 +289,7 @@ private fun AggiungiMedicinaleContent(
                 SezioneDatePicker(
                     dataInizio = uiState.dataInizio,
                     dataFine = uiState.dataFine,
+                    dataError = uiState.dataError,
                     onDataInizioChange = onDataInizioChange,
                     onDataFineChange = onDataFineChange
                 )
@@ -882,6 +883,7 @@ private fun SezioneGiorniSettimana(
 private fun SezioneDatePicker(
     dataInizio: LocalDate,
     dataFine: LocalDate?,
+    dataError: Boolean,
     onDataInizioChange: (LocalDate) -> Unit,
     onDataFineChange: (LocalDate?) -> Unit
 ) {
@@ -972,10 +974,11 @@ private fun SezioneDatePicker(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Data inizio
-        RowData(
+        ColumnData(
             etichetta = "Inizio terapia",
             valore = dataInizio.format(formatter),
-            onClick = { mostraPickerInizio = true }
+            onClick = { mostraPickerInizio = true },
+            error = dataError
         )
 
         // Toggle data fine
@@ -1009,20 +1012,26 @@ private fun SezioneDatePicker(
             RowData(
                 etichetta = "Data fine",
                 valore = dataFine?.format(formatter) ?: "Seleziona",
-                onClick = { mostraPickerFine = true }
+                onClick = { mostraPickerFine = true },
+                false
             )
         }
     }
 }
 
 @Composable
-private fun RowData(etichetta: String, valore: String, onClick: () -> Unit) {
+private fun RowData(
+    etichetta: String,
+    valore: String,
+    onClick: () -> Unit,
+    error: Boolean
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+            .border(1.dp, if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1039,6 +1048,57 @@ private fun RowData(etichetta: String, valore: String, onClick: () -> Unit) {
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(15.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColumnData(
+    etichetta: String,
+    valore: String,
+    onClick: () -> Unit,
+    error: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ){
+            Text(etichetta, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(valore, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = error,
+            enter = expandVertically(),
+            exit = shrinkVertically()
+        ) {
+            Text(
+                text = "Data di inizio successiva alla data di fine",
+                color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                fontSize = 13.sp
             )
         }
     }

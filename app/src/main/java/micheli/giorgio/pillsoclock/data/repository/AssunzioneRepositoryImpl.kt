@@ -56,7 +56,11 @@ class AssunzioneRepositoryImpl (
 
     override fun isPianoAttivoInData(piano: PianoAssunzione, data: LocalDate): Boolean {
         return when (piano.tipoFrequenza) {
-            TipoFrequenza.GIORNALIERA -> true
+            TipoFrequenza.GIORNALIERA -> {
+                piano.dataFine?.let {
+                    data.isEqual(piano.dataInizio) || (data.isAfter(piano.dataInizio) && data.isBefore(piano.dataFine))
+                } ?: data.isEqual(piano.dataInizio) || data.isAfter(piano.dataInizio)
+            }
             TipoFrequenza.OGNI_N_GIORNI -> {
                 val giorniDallinizio = ChronoUnit.DAYS.between(
                     piano.dataInizio, data // dataInizio va aggiunta a PianoAssunzione

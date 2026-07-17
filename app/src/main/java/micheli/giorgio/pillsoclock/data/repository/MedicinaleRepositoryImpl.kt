@@ -42,6 +42,11 @@ class MedicinaleRepositoryImpl (
         medicinaleDao.getTuttiMedicinaliConPianoEOrari(idUtente)
             .map { medicinali -> medicinali.map { it.toDomain() } }
 
+    override fun checkIfAMedicinaleExist(idUtente: Int): Flow<Boolean> {
+        return medicinaleDao.checkIfAMedicinaleExist(idUtente)
+            .map { medicinale -> medicinale?.toDomain() != null }
+    }
+
     // --- scrittura ---
 
     @Transaction

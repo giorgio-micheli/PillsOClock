@@ -20,6 +20,7 @@ import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
 import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
+import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -33,6 +34,7 @@ data class HomeUiState(
     val puoAssumereOra: Boolean = false,
     val inRitardo: List<AssunzioneGiornaliera> = emptyList(),
     val prossimeAssunzioni: List<AssunzioneGiornaliera> = emptyList(),
+    val esisteAlmenoUnMedicinale: Boolean = false,
     val assunteOggi: Int = 0,
     val totaliOggi: Int = 0,
     val isLoading: Boolean = true,
@@ -40,6 +42,7 @@ data class HomeUiState(
 )
 
 class HomeViewModel(
+    private val medicinaliRepository: MedicinaleRepository,
     private val assunzioneRepository: AssunzioneRepository,
     private val utenteRepository: UtenteRepository
 ) : ViewModel() {
@@ -62,9 +65,10 @@ class HomeViewModel(
                     } else {
                         combine(
                             assunzioneRepository.getAssunzioniGiornaliere(utente.id, LocalDate.now()),
-                            ticker()
-                        ) { assunzioni, now ->
-                            costruisciUiState(assunzioni, now)
+                            ticker(),
+                            medicinaliRepository.checkIfAMedicinaleExist(utente.id)
+                        ) { assunzioni, now, exist->
+                            costruisciUiState(assunzioni, now, exist)
                         }
                     }
                 }
@@ -92,7 +96,8 @@ class HomeViewModel(
 
     private fun costruisciUiState(
         assunzioni: List<AssunzioneGiornaliera>,
-        now: LocalDateTime
+        now: LocalDateTime,
+        medicinaleExist: Boolean
     ): HomeUiState {
         val oraCorrente = now.toLocalTime()
 
@@ -117,6 +122,7 @@ class HomeViewModel(
             prossimeAssunzioni = inCoda,
             assunteOggi = assunzioni.size - inAttesa.size,
             totaliOggi = assunzioni.size,
+            esisteAlmenoUnMedicinale = medicinaleExist,
             isLoading = false
         )
     }

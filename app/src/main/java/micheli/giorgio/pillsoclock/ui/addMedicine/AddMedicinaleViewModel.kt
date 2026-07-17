@@ -35,7 +35,8 @@ data class AggiungiMedicinaleUiState(
     // errori di validazione per singolo campo
     val nomeError: Boolean = false,
     val orariError: Boolean = false,
-    val giorniSettimanaError: Boolean = false
+    val giorniSettimanaError: Boolean = false,
+    val dataError: Boolean = false
 )
 
 class AddMedicinaleViewModel(
@@ -95,7 +96,8 @@ class AddMedicinaleViewModel(
     }
 
     fun onNomeChange(value: String) {
-        _uiState.update { it.copy(nome = value) }
+        if (value.isNotBlank()) _uiState.update { it.copy(nome = value, nomeError = false) }
+        else _uiState.update { it.copy(nome = value, nomeError = true) }
     }
 
     fun onDosaggioChange(value: String) {
@@ -141,7 +143,9 @@ class AddMedicinaleViewModel(
     }
 
     fun onDataFineChange(data: LocalDate?) {
-        _uiState.update { it.copy(dataFine = data) }
+        if (data == null) {
+            _uiState.update { it.copy(dataFine = data, dataError = false) }
+        } else _uiState.update { it.copy(dataFine = data) }
     }
 
     fun onSave(): Boolean {
@@ -182,7 +186,8 @@ class AddMedicinaleViewModel(
                         tipoFrequenza = stato.tipoFrequenza,
                         intervalloGiorni = if (stato.tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) stato.intervalloGiorni else null,
                         giorniSettimana = if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) stato.giorniSettimana else null,
-                        dataInizio = stato.dataInizio
+                        dataInizio = stato.dataInizio,
+                        dataFine = stato.dataFine
                     )
                     medicinaleRepository.aggiornaMedicinale(medicinale)
                     medicinaleRepository.aggiornaPianoEOrari(piano, orari)
@@ -211,7 +216,8 @@ class AddMedicinaleViewModel(
                         tipoFrequenza = stato.tipoFrequenza,
                         intervalloGiorni = if (stato.tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) stato.intervalloGiorni else null,
                         giorniSettimana = if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) stato.giorniSettimana else null,
-                        dataInizio = stato.dataInizio
+                        dataInizio = stato.dataInizio,
+                        dataFine = stato.dataFine
                     )
                     // Inserisco tutto nel database
                     medicinaleRepository.inserisciMedicinaleConPianoEOrari(medicinale, piano, orari)
@@ -258,6 +264,15 @@ class AddMedicinaleViewModel(
         if (stato.tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA && stato.giorniSettimana.isEmpty()) {
             _uiState.update { it.copy(giorniSettimanaError = true) }
             valido = false
+        }
+
+        val dataFine = stato.dataFine
+
+        dataFine?.let {
+            if (stato.dataInizio.isAfter(dataFine)) {
+                _uiState.update { it.copy(dataError = true) }
+                valido = false
+            }
         }
 
         return valido

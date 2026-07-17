@@ -101,14 +101,7 @@ TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi son
 //TODO: sistemare posizione snackbar che collide con il FAB nella homeScreen
 
 /*
-TODO: cambiare destinazione per la "modifica medicinale", far apparire la schermata in un
-    single pane classico invece che nel bottom sheet dialog. Sistemare di conseguenza anche il fatto
-    che spunta la topbar della homeScreen quando si cerca di modificare un medicinale. Creare una
-    nuova route per la modifica del medicinale.
- */
-
-/*
-TODO: bug quando non ho nessun medicinale e ne aggiungo uno che però ha orari ormai già passati
+TODO: bug nella homeScreen quando non ho nessun medicinale e ne aggiungo uno che però ha orari ormai già passati
  */
 
 /*
@@ -121,12 +114,6 @@ TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo st
  */
 
 /*
-TODO: se non ho nessuna assunzione in programma per oggi, devo cambiare il messaggio sulla homescreen,
-    non deve dire di aggiungere un medicinale per iniziare, il medicinale magari c'è già, solamente
-    oggi non è tra i giorni prefissati per assumerlo. Devo controllare se esiste già almeno un medicinale.
- */
-
-/*
 TODO: nella schermata "Medicinali" non si capisce che premendo una volta sola su un medicinale
   si apre la schermata per editarlo
  */
@@ -134,6 +121,7 @@ TODO: nella schermata "Medicinali" non si capisce che premendo una volta sola su
 /*
 TODO: implementare datastore
  */
+
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
@@ -167,6 +155,7 @@ fun HomeScreen(
 
     val homeViewModel: HomeViewModel = viewModel(
         factory = HomeViewModelFactory(
+            medicinaleRepository = app.medicinaleRepository,
             assunzioneRepository = app.assunzioneRepository,
             utenteRepository = app.utenteRepository
         )
@@ -311,7 +300,8 @@ fun Home(
                         assunteOggi = uiState.assunteOggi,
                         totaliOggi = uiState.totaliOggi,
                         onConferma = confermaAssunzione,
-                        onAggiungiClick = onAddMedicineButtonClick
+                        onAggiungiClick = onAddMedicineButtonClick,
+                        medicinaleExist = uiState.esisteAlmenoUnMedicinale
                     )
                 }
 
@@ -598,7 +588,8 @@ private fun ProssimaAssunzioneCard(
     assunteOggi: Int,
     totaliOggi: Int,
     onConferma: (AssunzioneGiornaliera) -> Unit,
-    onAggiungiClick: () -> Unit
+    onAggiungiClick: () -> Unit,
+    medicinaleExist: Boolean
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var isConfirming by remember { mutableStateOf(false) }
@@ -726,7 +717,8 @@ private fun ProssimaAssunzioneCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                        text = if (medicinaleExist) "Nessuno tra i tuoi medicinali attivi è programmato per oggi"
+                        else "Abilita o aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center
                     )

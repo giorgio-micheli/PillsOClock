@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DividerDefaults
@@ -66,6 +67,7 @@ data class SettingsSection(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToAccountScreen: () -> Unit
     // Se ci serviranno delle callback per navigare nelle altre sezioni andranno aggiunte qui
 ) {
 
@@ -76,6 +78,11 @@ fun SettingsScreen(
         SettingsSection(
             title = "Generali",
             items = listOf(
+                SettingsItem.Clickable(
+                    title = "Account",
+                    "Informazioni sull'account",
+                    onClick = onNavigateToAccountScreen
+                ),
                 SettingsItem.Toggle(
                     title = "Dark mode",
                     checked = darkModeEnabled,
@@ -169,7 +176,7 @@ private fun SettingsClickableRow(item: SettingsItem.Clickable) {
                 )
             }
         }
-        Icon(Icons.Filled.Home, contentDescription = null)
+        Icon(Icons.Default.AccountCircle, contentDescription = null)
     }
 }
 
@@ -177,6 +184,8 @@ private fun SettingsClickableRow(item: SettingsItem.Clickable) {
 @Composable
 fun SettingsScreenPreview() {
     AppTheme {
-        SettingsScreen()
+        SettingsScreen(
+            onNavigateToAccountScreen = {}
+        )
     }
 }

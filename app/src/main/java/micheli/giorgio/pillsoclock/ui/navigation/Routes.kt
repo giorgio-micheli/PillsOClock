@@ -25,8 +25,10 @@ sealed interface Routes: NavKey {
     @Serializable
     data object Medicinali : Routes
 
+    @Serializable
     sealed interface SettingsRoutes : NavKey {
-
+        @Serializable
+        object Account : SettingsRoutes
     }
 
 

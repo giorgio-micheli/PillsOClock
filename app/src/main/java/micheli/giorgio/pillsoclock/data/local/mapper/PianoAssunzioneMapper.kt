@@ -9,7 +9,8 @@ fun PianoAssunzioneEntity.toDomain(): PianoAssunzione = PianoAssunzione(
     tipoFrequenza = tipoFrequenza,
     intervalloGiorni = intervalloGiorni,
     giorniSettimana = giorniSettimana?.split(",")?.map { it.toInt() },
-    dataInizio = dataInizio
+    dataInizio = dataInizio,
+    dataFine = dataFine
 )
 
 fun PianoAssunzione.toEntity(): PianoAssunzioneEntity = PianoAssunzioneEntity(
@@ -18,5 +19,6 @@ fun PianoAssunzione.toEntity(): PianoAssunzioneEntity = PianoAssunzioneEntity(
     tipoFrequenza = tipoFrequenza,
     intervalloGiorni = intervalloGiorni,
     giorniSettimana = giorniSettimana?.joinToString(","),
-    dataInizio = dataInizio
+    dataInizio = dataInizio,
+    dataFine = dataFine
 )

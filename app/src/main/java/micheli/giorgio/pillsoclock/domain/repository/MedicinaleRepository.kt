@@ -16,6 +16,8 @@ interface MedicinaleRepository {
 
     fun getTuttiMedicinaliConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrari>>
 
+    fun checkIfAMedicinaleExist(idUtente: Int): Flow<Boolean>
+
     suspend fun inserisciMedicinaleConPianoEOrari(
         medicinale: Medicinale,
         piano: PianoAssunzione,

@@ -511,7 +511,8 @@ private fun medicinaleDiProva(
                 tipoFrequenza = tipoFrequenza,
                 intervalloGiorni = if (tipoFrequenza == TipoFrequenza.OGNI_N_GIORNI) 3 else null,
                 giorniSettimana = if (tipoFrequenza == TipoFrequenza.GIORNI_SETTIMANA) listOf(1, 3, 5) else null,
-                dataInizio = LocalDate.now().minusMonths(1)
+                dataInizio = LocalDate.now().minusMonths(1),
+                dataFine = LocalDate.now().plusDays(2)
             ),
             orari = orari.mapIndexed { index, orario ->
                 OrarioAssunzione(id = id * 10 + index, idPianoAssunzione = id, orario = orario)

@@ -20,6 +20,9 @@ interface MedicinaliDao {
     @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente")
     fun getAllMedicinali(idUtente: Int): Flow<List<MedicinaleEntity>>
 
+    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1 LIMIT 1")
+    fun checkIfAMedicinaleExist(idUtente: Int): Flow<MedicinaleEntity?>
+
     @Query("SELECT * FROM medicinali WHERE id = :id")
     fun getMedicinaleById(id: Int): Flow<MedicinaleEntity?> // è nullable perchè l'id potrebbe non esistere
 

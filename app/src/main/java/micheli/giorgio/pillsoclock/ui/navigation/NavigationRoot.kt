@@ -6,6 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -191,7 +194,19 @@ fun NavigationRoot() {
                         )
                     }
                     is Routes.Settings -> NavEntry(key) {
-                        SettingsScreen()
+                        SettingsScreen(
+                            onNavigateToAccountScreen = {
+                                backStack.addToBackstack(Routes.SettingsRoutes.Account)
+                            }
+                        )
+                    }
+                    is Routes.SettingsRoutes.Account -> NavEntry(key) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Account screen")
+                        }
                     }
                     is Routes.Frequenza -> NavEntry(key) {
                         FrequenzaScreen(
@@ -253,10 +268,11 @@ fun SelectTopBar(
 
         when (currentRoute) {
             is Routes.Home -> IntestazioneHome(onNavigateToSettings)
-            is Routes.AddMedicine, is Routes.Settings, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
+            is Routes.AddMedicine, is Routes.Settings, is Routes.SettingsRoutes.Account, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
 
                 val title = when (currentRoute) {
                     is Routes.Settings -> "Impostazioni"
+                    is Routes.SettingsRoutes.Account -> "Dettagli account"
                     is Routes.Frequenza -> "Frequenza"
                     is Routes.Medicinali -> "Medicinali"
                     is Routes.AddMedicine -> if (currentRoute.idMedicinale != null) "Modifica medicinale" else "Nuovo medicinale"
@@ -264,6 +280,7 @@ fun SelectTopBar(
                         val formatterData = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
                         LocalDate.ofEpochDay(currentRoute.epochDay).format(formatterData).replaceFirstChar { it.uppercase() }
                     }
+                    else -> ""
                 }
 
                 TopAppBar(

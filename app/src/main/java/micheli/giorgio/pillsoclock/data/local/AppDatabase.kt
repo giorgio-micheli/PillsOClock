@@ -28,7 +28,7 @@ import micheli.giorgio.pillsoclock.data.local.entity.UtenteEntity
         AssunzionePrevistaEntity::class,
         AssunzioneEffettuataEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -23,7 +23,8 @@ data class PianoAssunzione(
     val tipoFrequenza: TipoFrequenza,
     val intervalloGiorni: Int?,
     val giorniSettimana: List<Int>?, // qui ha senso usare List<Int> invece di String, il domain non deve sapere come viene serializzato
-    val dataInizio: LocalDate
+    val dataInizio: LocalDate,
+    val dataFine: LocalDate?
 )
 
 

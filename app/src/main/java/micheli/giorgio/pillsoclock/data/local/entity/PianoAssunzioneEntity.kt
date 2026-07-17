@@ -53,5 +53,8 @@ data class PianoAssunzioneEntity(
     val giorniSettimana: String?,
 
     @ColumnInfo("data_inizio")
-    val dataInizio: LocalDate
+    val dataInizio: LocalDate,
+
+    @ColumnInfo("data_fine")
+    val dataFine: LocalDate?
 )
