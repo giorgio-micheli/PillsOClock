@@ -6,9 +6,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -101,7 +104,8 @@ fun NavigationRoot() {
             SelectTopBar(
                 route = backStack.lastOrNull(),
                 onBack = { backStack.removeFromBackstack() },
-                onNavigateToSettings = { backStack.addToBackstack(Routes.Settings) }
+                onNavigateToSettings = { backStack.addToBackstack(Routes.Settings) },
+                onAddMedicinale = { backStack.addToBackstack(Routes.AddMedicine())}
             )
         },
         floatingActionButton = {
@@ -256,7 +260,8 @@ fun SnapshotStateList<Any>.addToBackstack(key: NavKey): Unit {
 fun SelectTopBar(
     route: Any?,
     onBack: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onAddMedicinale: () -> Unit
 ) {
 
     AnimatedContent(
@@ -285,7 +290,21 @@ fun SelectTopBar(
                 }
 
                 TopAppBar(
-                    title = { Text(title) },
+                    title = {
+                        if (currentRoute is Routes.Medicinali) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(title)
+                                IconButton(onClick = onAddMedicinale) {
+                                    Icon(Icons.Default.Add, contentDescription = "aggiungi medicinale")
+                                }
+                            }
+                        } else
+                            Text(title)
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")

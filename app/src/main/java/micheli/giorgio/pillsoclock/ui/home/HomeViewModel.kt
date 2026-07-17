@@ -32,6 +32,7 @@ private const val INTERVALLO_TICK_MS = 15_000L
 data class HomeUiState(
     val prossimaAssunzione: AssunzioneGiornaliera? = null,
     val puoAssumereOra: Boolean = false,
+    val prossimaInRitardo: AssunzioneGiornaliera? = null,
     val inRitardo: List<AssunzioneGiornaliera> = emptyList(),
     val prossimeAssunzioni: List<AssunzioneGiornaliera> = emptyList(),
     val esisteAlmenoUnMedicinale: Boolean = false,
@@ -110,15 +111,21 @@ class HomeViewModel(
         }
 
         val restantiOrdinate = restanti.sortedBy { it.assunzionePrevista.orarioPrevisto }
+        val inRitardoOrdinate = inRitardo.sortedBy { it.assunzionePrevista.orarioPrevisto }
+
         val prossima = restantiOrdinate.firstOrNull()
+        val prossimaInRitardo = inRitardoOrdinate.firstOrNull()
+
         val inCoda = restantiOrdinate.drop(1)
+        val restantiInRitardo = inRitardoOrdinate.drop(1)
 
         return HomeUiState(
             prossimaAssunzione = prossima,
+            prossimaInRitardo = prossimaInRitardo,
             puoAssumereOra = prossima?.let {
                 èNellaFinestra(it.assunzionePrevista.orarioPrevisto, oraCorrente)
             } ?: false,
-            inRitardo = inRitardo.sortedBy { it.assunzionePrevista.orarioPrevisto },
+            inRitardo = restantiInRitardo,
             prossimeAssunzioni = inCoda,
             assunteOggi = assunzioni.size - inAttesa.size,
             totaliOggi = assunzioni.size,

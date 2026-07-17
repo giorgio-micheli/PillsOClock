@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -295,7 +296,9 @@ fun Home(
                     totaliOggi = uiState.totaliOggi,
                     onConferma = confermaAssunzione,
                     onAggiungiClick = onAddMedicineButtonClick,
-                    medicinaleExist = uiState.esisteAlmenoUnMedicinale
+                    medicinaleExist = uiState.esisteAlmenoUnMedicinale,
+                    soloAssunzioniInRitardoRimaste = uiState.prossimaAssunzione == null && uiState.prossimaInRitardo != null,
+                    prossimaInRitardo = uiState.prossimaInRitardo
                 )
             }
 
@@ -413,7 +416,7 @@ private fun BarraAderenza(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Aderenza di oggi",
+                text = "Assunzioni di oggi",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -582,7 +585,9 @@ private fun ProssimaAssunzioneCard(
     totaliOggi: Int,
     onConferma: (AssunzioneGiornaliera) -> Unit,
     onAggiungiClick: () -> Unit,
-    medicinaleExist: Boolean
+    medicinaleExist: Boolean,
+    soloAssunzioniInRitardoRimaste: Boolean,
+    prossimaInRitardo: AssunzioneGiornaliera?
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var isConfirming by remember { mutableStateOf(false) }
@@ -607,11 +612,13 @@ private fun ProssimaAssunzioneCard(
         colors = CardDefaults.cardColors(
             containerColor = when {
                 prossima != null -> MaterialTheme.colorScheme.primaryContainer
+                soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.errorContainer
                 tuttoCompletato -> MaterialTheme.colorScheme.secondaryContainer
                 else -> MaterialTheme.colorScheme.surfaceVariant
             },
             contentColor = when {
                 prossima != null -> MaterialTheme.colorScheme.onPrimaryContainer
+                soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.onErrorContainer
                 tuttoCompletato -> MaterialTheme.colorScheme.onSecondaryContainer
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
@@ -672,6 +679,59 @@ private fun ProssimaAssunzioneCard(
                                 Text(
                                     modifier = Modifier.padding(vertical = 4.dp, horizontal = 24.dp),
                                     text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                soloAssunzioniInRitardoRimaste && prossimaInRitardo != null -> {
+
+                    BadgePillola(containerColor = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "IN RITARDO",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = prossimaInRitardo.nomeMedicinale,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    if (!prossimaInRitardo.dosaggio.isNullOrBlank()) {
+                        Text(
+                            text = prossimaInRitardo.dosaggio,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Text(
+                        text = "L'assunzione era prevista per le: " +
+                                "${prossimaInRitardo.assunzionePrevista.orarioPrevisto.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                        if (inCorso) {
+                            CheckmarkConfermato()
+                        } else {
+                            Button(
+                                shape = RoundedCornerShape(50),
+                                onClick = { eseguiConferma(prossimaInRitardo) },
+                                colors = ButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = MaterialTheme.colorScheme.onError,
+                                    disabledContainerColor = MaterialTheme.colorScheme.error,
+                                    disabledContentColor = MaterialTheme.colorScheme.onError
+                                )
+                            ) {
+                                Text(
+                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 24.dp),
+                                    text = "Assumi in ritardo",
                                     fontWeight = FontWeight.Bold
                                 )
                             }
