@@ -78,6 +78,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import micheli.giorgio.pillsoclock.LocalSnackbarHostState
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
@@ -98,19 +99,17 @@ TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi son
     di confermarlo sull'app" per i medicinali segnati come "in ritardo".
  */
 
-//TODO: sistemare posizione snackbar che collide con il FAB nella homeScreen
-
 /*
 TODO: bug nella homeScreen quando non ho nessun medicinale e ne aggiungo uno che però ha orari ormai già passati
  */
 
 /*
-TODO: Il FAB a volte smette di ricevere il click
+TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo storico nel calendario
+    quindi mi sa che dobbiamo fare una eliminazione fake con un flag "eliminato" sul database.
  */
 
 /*
-TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo storico nel calendario
-    quindi mi sa che dobbiamo fare una eliminazione fake con un flag "eliminato" sul database.
+TODO: Il FAB a volte smette di ricevere il click
  */
 
 /*
@@ -242,7 +241,7 @@ fun Home(
     onFrequenzaButtonClick: () -> Unit,
     onMedicinaliButtonClick: () -> Unit
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
 
     // Punto unico di registrazione: registra l'assunzione e mostra lo
@@ -264,72 +263,66 @@ fun Home(
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    Column(
+        modifier = modifier
+            .padding(horizontal = 16.dp)
+            .padding(top = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .padding(top = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+        //IntestazioneHome(onUserSettingsButtonClick)
+
+        BarraAderenza(
+            assunte = uiState.assunteOggi,
+            totali = uiState.totaliOggi
+        )
+
+        AzioniRapide(
+            onFrequenzaClick = onFrequenzaButtonClick,
+            onMedicinaliClick = onMedicinaliButtonClick,
+            onAggiungiClick = onAddMedicineButtonClick
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            contentPadding = PaddingValues(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            //IntestazioneHome(onUserSettingsButtonClick)
+            item {
+                ProssimaAssunzioneCard(
+                    prossima = uiState.prossimaAssunzione,
+                    puoAssumereOra = uiState.puoAssumereOra,
+                    assunteOggi = uiState.assunteOggi,
+                    totaliOggi = uiState.totaliOggi,
+                    onConferma = confermaAssunzione,
+                    onAggiungiClick = onAddMedicineButtonClick,
+                    medicinaleExist = uiState.esisteAlmenoUnMedicinale
+                )
+            }
 
-            BarraAderenza(
-                assunte = uiState.assunteOggi,
-                totali = uiState.totaliOggi
-            )
-
-            AzioniRapide(
-                onFrequenzaClick = onFrequenzaButtonClick,
-                onMedicinaliClick = onMedicinaliButtonClick,
-                onAggiungiClick = onAddMedicineButtonClick
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                contentPadding = PaddingValues(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
-            ) {
+            if (uiState.inRitardo.isNotEmpty()) {
                 item {
-                    ProssimaAssunzioneCard(
-                        prossima = uiState.prossimaAssunzione,
-                        puoAssumereOra = uiState.puoAssumereOra,
-                        assunteOggi = uiState.assunteOggi,
-                        totaliOggi = uiState.totaliOggi,
-                        onConferma = confermaAssunzione,
-                        onAggiungiClick = onAddMedicineButtonClick,
-                        medicinaleExist = uiState.esisteAlmenoUnMedicinale
+                    SezioneTitolo(
+                        testo = "IN RITARDO",
+                        numero = uiState.inRitardo.size,
+                        icon = Icons.Default.Warning,
+                        accentColor = MaterialTheme.colorScheme.error
                     )
                 }
-
-                if (uiState.inRitardo.isNotEmpty()) {
-                    item {
-                        SezioneTitolo(
-                            testo = "IN RITARDO",
-                            numero = uiState.inRitardo.size,
-                            icon = Icons.Default.Warning,
-                            accentColor = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    items(uiState.inRitardo, key = { it.assunzionePrevista.id }) { assunzione ->
-                        AssunzioneRitardataCard(assunzione, confermaAssunzione)
-                    }
+                items(uiState.inRitardo, key = { it.assunzionePrevista.id }) { assunzione ->
+                    AssunzioneRitardataCard(assunzione, confermaAssunzione)
                 }
+            }
 
-                if (uiState.prossimeAssunzioni.isNotEmpty()) {
-                    item {
-                        SezioneTitolo(
-                            testo = "PROSSIME ASSUNZIONI",
-                            numero = uiState.prossimeAssunzioni.size,
-                            icon = Icons.AutoMirrored.Filled.ArrowForward
-                        )
-                    }
-                    items(uiState.prossimeAssunzioni, key = { it.assunzionePrevista.id }) { assunzione ->
-                        ProssimaInCodaCard(assunzione, confermaAssunzione)
-                    }
+            if (uiState.prossimeAssunzioni.isNotEmpty()) {
+                item {
+                    SezioneTitolo(
+                        testo = "PROSSIME ASSUNZIONI",
+                        numero = uiState.prossimeAssunzioni.size,
+                        icon = Icons.AutoMirrored.Filled.ArrowForward
+                    )
+                }
+                items(uiState.prossimeAssunzioni, key = { it.assunzionePrevista.id }) { assunzione ->
+                    ProssimaInCodaCard(assunzione, confermaAssunzione)
                 }
             }
         }
@@ -996,11 +989,11 @@ fun HomeScreenPreview() {
                 prossimaAssunzione = assunzioneDiProva(1, "Omeprazolo", LocalTime.now().plusMinutes(2)),
                 puoAssumereOra = true,
                 inRitardo = listOf(
-                    assunzioneDiProva(2, "Cardioaspirina", LocalTime.now().minusHours(2), dosaggio = "100mg")
+                    assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg")
                 ),
                 prossimeAssunzioni = listOf(
                     assunzioneDiProva(3, "Vitamina D", LocalTime.now().plusHours(3), dosaggio = "1 goccia"),
-                    assunzioneDiProva(4, "Metformina", LocalTime.now().plusHours(6), dosaggio = "500mg")
+                    assunzioneDiProva(4, "FaringelPlus", LocalTime.now().plusHours(6), dosaggio = "500mg")
                 ),
                 assunteOggi = 1,
                 totaliOggi = 4,
@@ -1018,10 +1011,54 @@ fun HomeScreenPreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
+fun HomeScreenInRitardoPreview() {
+    AppTheme {
+        Home(
+            uiState = HomeUiState(
+                prossimaAssunzione = null,
+                puoAssumereOra = true,
+                inRitardo = listOf(
+                    assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
+                    assunzioneDiProva(2, "Tachipirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
+                    assunzioneDiProva(2, "Omeprazolo", LocalTime.now().minusHours(2), dosaggio = "100mg")
+                ),
+                prossimeAssunzioni = emptyList(),
+                assunteOggi = 1,
+                totaliOggi = 4,
+                isLoading = false
+            ),
+            onAssumiClick = {},
+            onAnnullaClick = {},
+            onAddMedicineButtonClick = {},
+            onUserSettingsButtonClick = {},
+            onFrequenzaButtonClick = {},
+            onMedicinaliButtonClick = {}
+        )
+    }
+}
+
+@Preview(name = "Home nessun medicinale esistente o attivo",showBackground = true, showSystemUi = true)
+@Composable
 fun HomeScreenVuotaPreview() {
     AppTheme {
         Home(
             uiState = HomeUiState(isLoading = false),
+            onAssumiClick = {},
+            onAnnullaClick = {},
+            onAddMedicineButtonClick = {},
+            onUserSettingsButtonClick = {},
+            onFrequenzaButtonClick = {},
+            onMedicinaliButtonClick = {}
+        )
+    }
+}
+
+@Preview(name = "Home medicinale non attivo", showBackground = true, showSystemUi = true)
+@Composable
+fun HomeScreenConMedicinaleNonAttivoPreview() {
+    AppTheme {
+        Home(
+            uiState = HomeUiState(isLoading = false, esisteAlmenoUnMedicinale = true),
             onAssumiClick = {},
             onAnnullaClick = {},
             onAddMedicineButtonClick = {},

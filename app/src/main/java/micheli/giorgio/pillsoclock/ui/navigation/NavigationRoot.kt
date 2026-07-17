@@ -160,6 +160,7 @@ fun NavigationRoot() {
                 when (key) {
                     is Routes.Home -> NavEntry(key) {
                         HomeScreen(
+                            modifier = Modifier.fillMaxSize(),
                             onAddMedicineButtonClick = {
                                 backStack.addToBackstack(Routes.AddMedicine())
                             },
