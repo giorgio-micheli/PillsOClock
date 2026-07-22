@@ -80,6 +80,8 @@ dependencies {
     implementation(libs.androidx.constraintlayout.compose)
     // API Splashscreen di android
     implementation(libs.androidx.core.splashscreen)
+    // DataStore (Preferences), per le impostazioni utente (es. dark mode)
+    implementation(libs.androidx.datastore.preferences)
 }
 
 ksp {

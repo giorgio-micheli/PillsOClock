@@ -30,7 +30,10 @@ interface OrariAssunzioniDao {
     @Delete
     suspend fun delete(orarioAssunzione: OrarioAssunzioneEntity)
 
-    @Query("DELETE FROM orari_assunzioni WHERE id_piano_assunzione = :idPianoAssunzione")
-    suspend fun deleteAllByPiano(idPianoAssunzione: Int)
+    @Query("UPDATE orari_assunzioni SET attivo = 0 WHERE id = :id")
+    suspend fun disattiva(id: Int)
+
+    @Query("UPDATE orari_assunzioni SET attivo = 1 WHERE id = :id")
+    suspend fun attiva(id: Int)
 
 }

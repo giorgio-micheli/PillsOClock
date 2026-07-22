@@ -23,6 +23,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import micheli.giorgio.pillsoclock.ui.home.HomeScreen
 import micheli.giorgio.pillsoclock.ui.home.HomeViewModel
@@ -48,9 +49,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            // Imposto temporaneamente il light theme come tema obbligatorio
+            val app = applicationContext as PillsOClockApp
+            val mainViewModel: MainViewModel = viewModel(
+                factory = MainViewModelFactory(app.impostazioniRepository)
+            )
+            val uiState by mainViewModel.uiState.collectAsStateWithLifecycle()
+
             AppTheme(
-                darkTheme = false
+                darkTheme = uiState.darkModeAbilitata
             ) {
                 val snackbarHostState = remember { SnackbarHostState() }
 

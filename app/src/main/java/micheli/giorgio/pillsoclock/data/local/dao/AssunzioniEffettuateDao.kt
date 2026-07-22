@@ -29,15 +29,38 @@ interface AssunzioniEffettuateDao {
     """)
     fun getAssunzioniEffettuatePerGiorno(idUtente: Int, data: LocalDate): Flow<List<AssunzioneEffettuataEntity>>
 
+    // Usata per lo storico ("Frequenza"): niente filtro su attivo/eliminato,
+    // deve mostrare quello che è realmente accaduto quel giorno indipendentemente
+    // dallo stato attuale del medicinale (anche se nel frattempo è stato messo in
+    // pausa o eliminato — eliminare non cancella mai fisicamente la riga).
     @Transaction
     @Query(
         """
-        SELECT ap.*, m.nome AS nomeMedicinale, m.dosaggio AS dosaggio 
+        SELECT ap.*, m.nome AS nomeMedicinale, m.dosaggio AS dosaggio
         FROM assunzioni_previste ap
         INNER JOIN orari_assunzioni oa ON ap.id_orario_assunzione = oa.id
         INNER JOIN piani_assunzioni pa ON oa.id_piano_assunzione = pa.id
         INNER JOIN medicinali m ON pa.id_medicinale = m.id
-        WHERE ap.data = :data AND m.id_utente = :idUtente AND m.attivo = 1
+        WHERE ap.data = :data AND m.id_utente = :idUtente
+        ORDER BY ap.orario_previsto ASC
+    """
+    )
+    fun getAssunzioniGiornaliereStorico(
+        idUtente: Int,
+        data: LocalDate
+    ): Flow<List<AssunzioneGiornalieraEntity>>
+
+    // Usata da HomeViewModel per "oggi": filtra i medicinali non più attivi/eliminati,
+    // così una modifica allo stato del medicinale si riflette subito in home.
+    @Transaction
+    @Query(
+        """
+        SELECT ap.*, m.nome AS nomeMedicinale, m.dosaggio AS dosaggio
+        FROM assunzioni_previste ap
+        INNER JOIN orari_assunzioni oa ON ap.id_orario_assunzione = oa.id
+        INNER JOIN piani_assunzioni pa ON oa.id_piano_assunzione = pa.id
+        INNER JOIN medicinali m ON pa.id_medicinale = m.id
+        WHERE ap.data = :data AND m.id_utente = :idUtente AND m.attivo = 1 AND m.eliminato = 0
         ORDER BY ap.orario_previsto ASC
     """
     )

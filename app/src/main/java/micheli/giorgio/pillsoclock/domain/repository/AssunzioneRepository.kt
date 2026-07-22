@@ -11,6 +11,8 @@ interface AssunzioneRepository {
 
     fun getAssunzioniGiornaliere(idUtente: Int, data: LocalDate): Flow<List<AssunzioneGiornaliera>>
 
+    fun getAssunzioniGiornaliereStorico(idUtente: Int, data: LocalDate): Flow<List<AssunzioneGiornaliera>>
+
     fun getGiorniConAssunzioni(
         idUtente: Int,
         dataInizio: LocalDate,
@@ -28,6 +30,8 @@ interface AssunzioneRepository {
     suspend fun registraAssunzione(assunzionePrevista: AssunzionePrevista, idUtente: Int)
 
     suspend fun annullaAssunzione(assunzionePrevista: AssunzionePrevista)
+
+    suspend fun deleteAssunzioniPrevisteFromPiano(idPiano: Int)
 
     suspend fun segnaVecchieComeSaltate(idUtente: Int)
 

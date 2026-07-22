@@ -1,7 +1,6 @@
 package micheli.giorgio.pillsoclock.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -14,13 +13,13 @@ import micheli.giorgio.pillsoclock.data.local.entity.relations.MedicinaleConPian
 @Dao
 interface MedicinaliDao {
 
-    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1")
+    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1 AND eliminato = 0")
     fun getMedicinaliAttivi(idUtente: Int): Flow<List<MedicinaleEntity>>
 
     @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente")
     fun getAllMedicinali(idUtente: Int): Flow<List<MedicinaleEntity>>
 
-    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1 LIMIT 1")
+    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1 AND eliminato = 0 LIMIT 1")
     fun checkIfAMedicinaleExist(idUtente: Int): Flow<MedicinaleEntity?>
 
     @Query("SELECT * FROM medicinali WHERE id = :id")
@@ -38,19 +37,19 @@ interface MedicinaliDao {
     @Query("UPDATE medicinali SET attivo = 1 WHERE id = :id")
     suspend fun attiva(id: Int)
 
-    @Delete
-    suspend fun delete(medicinale: MedicinaleEntity)
+    @Query("UPDATE medicinali SET eliminato = 1 WHERE id = :id")
+    suspend fun elimina(id: Int)
 
     @Transaction
     @Query("SELECT * FROM medicinali WHERE id = :id")
     fun getMedicinaleConPianoAssunzioneEOrari(id: Int): Flow<MedicinaleConPianoEOrariEntity?>
 
     @Transaction
-    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1")
+    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND attivo = 1 AND eliminato = 0")
     fun getMedicinaliAttiviConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrariEntity>>
 
     @Transaction
-    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente")
+    @Query("SELECT * FROM medicinali WHERE id_utente = :idUtente AND eliminato = 0")
     fun getTuttiMedicinaliConPianoEOrari(idUtente: Int): Flow<List<MedicinaleConPianoEOrariEntity>>
 
 }

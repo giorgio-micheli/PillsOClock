@@ -1,10 +1,14 @@
 package micheli.giorgio.pillsoclock.ui.navigation
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,15 +91,15 @@ fun NavigationRoot() {
         derivedStateOf { backStack.lastOrNull() is Routes.Home }
     }
     // Riferimento costante a State<Float> reso "float" dalla keyword "by"
-    val scale by animateFloatAsState(
-        targetValue = if (fabVisible) 1f else 0f,
-        animationSpec = if (fabVisible) {
-            tween(durationMillis = 300)
-        } else {
-            tween(durationMillis = 200)
-        },
-        label = "fabScaleAlpha"
-    )
+//    val scale by animateFloatAsState(
+//        targetValue = if (fabVisible) 1f else 0f,
+//        animationSpec = if (fabVisible) {
+//            tween(durationMillis = 300)
+//        } else {
+//            tween(durationMillis = 200)
+//        },
+//        label = "fabScaleAlpha"
+//    )
 
     // Unica Scaffold principale dell'app
     Scaffold(
@@ -110,31 +114,36 @@ fun NavigationRoot() {
         },
         floatingActionButton = {
 
-//            AnimatedVisibility(
-//                visible = backStack.lastOrNull() is Routes.Home,
-//                enter = scaleIn(tween(300)) + fadeIn(tween(300)),
-//                exit = scaleOut(tween(200)) + fadeOut(tween(200))
-//            ) {
-            FloatingActionButton(
-                modifier = Modifier
-                    .size(72.dp)
-                    .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = scale
-                    compositingStrategy = CompositingStrategy.ModulateAlpha
-                },
-                shape = CircleShape,
-                onClick = dropUnlessResumed { backStack.addToBackstack(Routes.AddMedicine()) }
+            AnimatedVisibility(
+                visible = fabVisible,
+                enter = scaleIn(tween(300)) + fadeIn(tween(300)),
+                exit = scaleOut(tween(200)) + fadeOut(tween(200))
             ) {
-                Icon(
-                    modifier = Modifier.size(32.dp),
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Aggiungi mediciale",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Box() {
+                    FloatingActionButton(
+                        modifier = Modifier
+                            .size(72.dp),
+//                    .graphicsLayer {
+//                    scaleX = scale
+//                    scaleY = scale
+//                    alpha = scale
+//                    compositingStrategy = CompositingStrategy.ModulateAlpha
+//                },
+                        shape = CircleShape,
+                        onClick = {
+                            Log.d("NAVIGATION-ROOT", "FAB PRESSED")
+                            backStack.addToBackstack(Routes.AddMedicine())
+                        }
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(32.dp),
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Aggiungi mediciale",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             }
-           // }
         },
         snackbarHost = {
             SnackbarHost(hostState = LocalSnackbarHostState.current)

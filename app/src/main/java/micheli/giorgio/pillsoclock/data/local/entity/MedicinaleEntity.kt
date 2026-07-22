@@ -41,5 +41,7 @@ data class MedicinaleEntity(
     val dataInizio: LocalDate,
 
     @ColumnInfo("data_fine")
-    val dataFine: LocalDate?
+    val dataFine: LocalDate?,
+
+    val eliminato: Boolean = false
 )

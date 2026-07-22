@@ -4,9 +4,13 @@ import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,9 +24,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -35,7 +41,13 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
@@ -55,6 +67,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +76,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -101,14 +115,12 @@ TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi son
  */
 
 /*
-TODO: bug nella homeScreen quando non ho nessun medicinale e ne aggiungo uno che però ha orari ormai già passati
- */
-
-/*
 TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo storico nel calendario
     quindi mi sa che dobbiamo fare una eliminazione fake con un flag "eliminato" sul database.
  */
-
+/*
+TODO: Tutta la sezione di modifiche non funziona
+ */
 /*
 TODO: Il FAB a volte smette di ricevere il click
  */
@@ -372,8 +384,11 @@ fun IntestazioneHome(
         }
         IconButton(
             modifier = Modifier
+                .shadow(8.dp, CircleShape, false)
+
                 .clip(CircleShape)
-                .background(color = MaterialTheme.colorScheme.secondaryContainer),
+                .background(color = MaterialTheme.colorScheme.secondaryContainer)
+                ,
             onClick = dropUnlessResumed {
                 onUserSettingsButtonClick()
             }
@@ -606,182 +621,210 @@ private fun ProssimaAssunzioneCard(
     val tuttoCompletato = prossima == null && totaliOggi > 0 && assunteOggi == totaliOggi
     val nessunaAssunzioneOggi = totaliOggi == 0
 
+    val containerColor by animateColorAsState(
+        targetValue = when {
+            prossima != null -> MaterialTheme.colorScheme.primaryContainer
+            soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.errorContainer
+            tuttoCompletato -> MaterialTheme.colorScheme.secondaryContainer
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        label = "container_color"
+    )
+    val contentColor = when {
+        prossima != null -> MaterialTheme.colorScheme.onPrimaryContainer
+        soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.onErrorContainer
+        tuttoCompletato -> MaterialTheme.colorScheme.onSecondaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = if (prossima != null || soloAssunzioniInRitardoRimaste) 6.dp else 0.dp,
+                shape = RoundedCornerShape(28.dp),
+                spotColor = containerColor
+            ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = when {
-                prossima != null -> MaterialTheme.colorScheme.primaryContainer
-                soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.errorContainer
-                tuttoCompletato -> MaterialTheme.colorScheme.secondaryContainer
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            },
-            contentColor = when {
-                prossima != null -> MaterialTheme.colorScheme.onPrimaryContainer
-                soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.onErrorContainer
-                tuttoCompletato -> MaterialTheme.colorScheme.onSecondaryContainer
-                else -> MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            containerColor = containerColor,
+            contentColor = contentColor
         ),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            when {
-                prossima != null -> {
-                    BadgePillola(containerColor = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "PROSSIMA ASSUNZIONE",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = prossima.nomeMedicinale,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    if (!prossima.dosaggio.isNullOrBlank()) {
-                        Text(
-                            text = prossima.dosaggio,
-                            style = MaterialTheme.typography.bodyMedium
+        AnimatedContent(
+            targetState = when {
+                prossima != null -> "prossima"
+                soloAssunzioniInRitardoRimaste -> "ritardo"
+                tuttoCompletato -> "completato"
+                else -> "vuoto"
+            },
+            label = "stato_card",
+            transitionSpec = {
+                (fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 }) togetherWith
+                        fadeOut(tween(150))
+            }
+        ) { stato ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                when (stato) {
+                    "prossima" -> if (prossima != null) {
+                        IconaPillolaCerchiata(
+                            background = MaterialTheme.colorScheme.primary,
+                            icona = Icons.Rounded.AccountCircle
                         )
-                    }
-                    Text(
-                        text = prossima.assunzionePrevista.orarioPrevisto.format(
-                            DateTimeFormatter.ofPattern("HH:mm")
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                        Spacer(Modifier.height(8.dp))
+                        EtichettaStato(
+                            testo = "PROSSIMA ASSUNZIONE",
+                            color = contentColor.copy(alpha = 0.7f)
+                        )
+                        Text(
+                            text = prossima.nomeMedicinale,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
 
-                    Spacer(Modifier.height(12.dp))
+                        InfoChipsRow(
+                            dosaggio = prossima.dosaggio,
+                            orario = prossima.assunzionePrevista.orarioPrevisto,
+                            contentColor = contentColor
+                        )
 
-                    AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
-                        if (inCorso) {
-                            CheckmarkConfermato()
-                        } else {
-                            Button(
-                                shape = RoundedCornerShape(50),
-                                onClick = {
-                                    if (puoAssumereOra) {
-                                        eseguiConferma(prossima)
-                                    } else {
-                                        showDialog = true
+                        Spacer(Modifier.height(16.dp))
+
+                        AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                            if (inCorso) {
+                                CheckmarkConfermato()
+                            } else {
+                                Button(
+                                    shape = RoundedCornerShape(50),
+                                    modifier = Modifier.heightIn(min = 48.dp),
+                                    onClick = {
+                                        if (puoAssumereOra) {
+                                            eseguiConferma(prossima)
+                                        } else {
+                                            showDialog = true
+                                        }
                                     }
+                                ) {
+                                    Icon(
+                                        imageVector = if (puoAssumereOra) Icons.Rounded.Check else Icons.Rounded.Call,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
-                            ) {
-                                Text(
-                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 24.dp),
-                                    text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
-                                    fontWeight = FontWeight.Bold
-                                )
                             }
                         }
                     }
-                }
 
-                soloAssunzioniInRitardoRimaste && prossimaInRitardo != null -> {
-
-                    BadgePillola(containerColor = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "IN RITARDO",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = prossimaInRitardo.nomeMedicinale,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
-                    if (!prossimaInRitardo.dosaggio.isNullOrBlank()) {
+                    "ritardo" -> if (prossimaInRitardo != null) {
+                        IconaPillolaCerchiata(
+                            background = MaterialTheme.colorScheme.error,
+                            icona = Icons.Rounded.Warning
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        EtichettaStato(
+                            testo = "IN RITARDO",
+                            color = contentColor.copy(alpha = 0.85f)
+                        )
                         Text(
-                            text = prossimaInRitardo.dosaggio,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = prossimaInRitardo.nomeMedicinale,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        InfoChipsRow(
+                            dosaggio = prossimaInRitardo.dosaggio,
+                            orario = prossimaInRitardo.assunzionePrevista.orarioPrevisto,
+                            contentColor = contentColor,
+                            orarioLabel = "prevista per le"
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                            if (inCorso) {
+                                CheckmarkConfermato()
+                            } else {
+                                Button(
+                                    shape = RoundedCornerShape(50),
+                                    modifier = Modifier.heightIn(min = 48.dp),
+                                    onClick = { eseguiConferma(prossimaInRitardo) },
+                                    colors = ButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.error,
+                                        contentColor = MaterialTheme.colorScheme.onError,
+                                        disabledContainerColor = MaterialTheme.colorScheme.error,
+                                        disabledContentColor = MaterialTheme.colorScheme.onError
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = "Assumi in ritardo",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    "completato" -> {
+                        Image(
+                            modifier = Modifier.size(64.dp),
+                            painter = painterResource(id = R.drawable.listcompleted),
+                            contentDescription = "Lista medicine completate"
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Tutto fatto per oggi",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Hai assunto $assunteOggi/$totaliOggi medicine previste",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = contentColor.copy(alpha = 0.8f)
                         )
                     }
-                    Text(
-                        text = "L'assunzione era prevista per le: " +
-                                "${prossimaInRitardo.assunzionePrevista.orarioPrevisto.format(DateTimeFormatter.ofPattern("HH:mm"))}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
 
-                    Spacer(Modifier.height(12.dp))
-
-                    AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
-                        if (inCorso) {
-                            CheckmarkConfermato()
-                        } else {
-                            Button(
-                                shape = RoundedCornerShape(50),
-                                onClick = { eseguiConferma(prossimaInRitardo) },
-                                colors = ButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.error,
-                                    contentColor = MaterialTheme.colorScheme.onError,
-                                    disabledContainerColor = MaterialTheme.colorScheme.error,
-                                    disabledContentColor = MaterialTheme.colorScheme.onError
-                                )
-                            ) {
-                                Text(
-                                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 24.dp),
-                                    text = "Assumi in ritardo",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                    else -> { // vuoto / nessuna assunzione oggi
+                        Text(
+                            text = "Nessuna assunzione in programma",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (medicinaleExist) "Nessuno tra i tuoi medicinali attivi è programmato per oggi"
+                            else "Abilita o aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = contentColor.copy(alpha = 0.8f)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Image(
+                            modifier = Modifier.size(64.dp),
+                            painter = painterResource(R.drawable.no_task),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit
+                        )
                     }
-                }
-
-                tuttoCompletato -> {
-//                    Icon(
-//                        imageVector = Icons.Default.CheckCircle,
-//                        contentDescription = null,
-//                        modifier = Modifier.size(40.dp)
-//                    )
-                    Image(
-                        modifier = Modifier.size(64.dp),
-                        painter = painterResource(id = R.drawable.listcompleted),
-                        contentDescription = "Lista medicine completate"
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Tutto fatto per oggi",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Hai assunto $assunteOggi/$totaliOggi medicine previste",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                nessunaAssunzioneOggi -> {
-                    Text(
-                        text = "Nessuna assunzione in programma",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (medicinaleExist) "Nessuno tra i tuoi medicinali attivi è programmato per oggi"
-                        else "Abilita o aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Image(
-                        modifier = Modifier.size(64.dp),
-                        painter = painterResource(R.drawable.no_task),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit
-                    )
                 }
             }
         }
@@ -795,6 +838,96 @@ private fun ProssimaAssunzioneCard(
                 eseguiConferma(prossima)
             },
             onAnnulla = { showDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun IconaPillolaCerchiata(background: Color, icona: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .background(background.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icona,
+            contentDescription = null,
+            tint = background,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
+
+@Composable
+private fun EtichettaStato(testo: String, color: Color) {
+    Text(
+        text = testo,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+        color = color
+    )
+}
+
+@Composable
+private fun InfoChipsRow(
+    dosaggio: String?,
+    orario: java.time.LocalTime,
+    contentColor: Color,
+    orarioLabel: String? = null
+) {
+    Spacer(Modifier.height(10.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (!dosaggio.isNullOrBlank()) {
+            AssistChip(
+                onClick = {},
+                enabled = false,
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.AccountCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
+                label = { Text(dosaggio, style = MaterialTheme.typography.labelMedium) },
+                colors = AssistChipDefaults.assistChipColors(
+                    disabledLabelColor = contentColor,
+                    disabledLeadingIconContentColor = contentColor,
+                    disabledContainerColor = contentColor.copy(alpha = 0.1f)
+                ),
+                border = null
+            )
+        }
+        AssistChip(
+            onClick = {},
+            enabled = false,
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Call,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            },
+            label = {
+                Text(
+                    text = buildString {
+                        orarioLabel?.let { append("$it ") }
+                        append(orario.format(DateTimeFormatter.ofPattern("HH:mm")))
+                    },
+                    style = MaterialTheme.typography.labelMedium
+                )
+            },
+            colors = AssistChipDefaults.assistChipColors(
+                disabledLabelColor = contentColor,
+                disabledLeadingIconContentColor = contentColor,
+                disabledContainerColor = contentColor.copy(alpha = 0.1f)
+            ),
+            border = null
         )
     }
 }
@@ -1044,28 +1177,30 @@ private fun assunzioneDiProva(
 @Composable
 fun HomeScreenPreview() {
     AppTheme {
-        Home(
-            uiState = HomeUiState(
-                prossimaAssunzione = assunzioneDiProva(1, "Omeprazolo", LocalTime.now().plusMinutes(2)),
-                puoAssumereOra = true,
-                inRitardo = listOf(
-                    assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg")
+        CompositionLocalProvider(LocalSnackbarHostState provides remember { SnackbarHostState() }) {
+            Home(
+                uiState = HomeUiState(
+                    prossimaAssunzione = assunzioneDiProva(1, "Omeprazolo", LocalTime.now().plusMinutes(2)),
+                    puoAssumereOra = true,
+                    inRitardo = listOf(
+                        assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg")
+                    ),
+                    prossimeAssunzioni = listOf(
+                        assunzioneDiProva(3, "Vitamina D", LocalTime.now().plusHours(3), dosaggio = "1 goccia"),
+                        assunzioneDiProva(4, "FaringelPlus", LocalTime.now().plusHours(6), dosaggio = "500mg")
+                    ),
+                    assunteOggi = 1,
+                    totaliOggi = 4,
+                    isLoading = false
                 ),
-                prossimeAssunzioni = listOf(
-                    assunzioneDiProva(3, "Vitamina D", LocalTime.now().plusHours(3), dosaggio = "1 goccia"),
-                    assunzioneDiProva(4, "FaringelPlus", LocalTime.now().plusHours(6), dosaggio = "500mg")
-                ),
-                assunteOggi = 1,
-                totaliOggi = 4,
-                isLoading = false
-            ),
-            onAssumiClick = {},
-            onAnnullaClick = {},
-            onAddMedicineButtonClick = {},
-            onUserSettingsButtonClick = {},
-            onFrequenzaButtonClick = {},
-            onMedicinaliButtonClick = {}
-        )
+                onAssumiClick = {},
+                onAnnullaClick = {},
+                onAddMedicineButtonClick = {},
+                onUserSettingsButtonClick = {},
+                onFrequenzaButtonClick = {},
+                onMedicinaliButtonClick = {}
+            )
+        }
     }
 }
 
@@ -1073,27 +1208,33 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreenInRitardoPreview() {
     AppTheme {
-        Home(
-            uiState = HomeUiState(
-                prossimaAssunzione = null,
-                puoAssumereOra = true,
-                inRitardo = listOf(
-                    assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
-                    assunzioneDiProva(2, "Tachipirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
-                    assunzioneDiProva(2, "Omeprazolo", LocalTime.now().minusHours(2), dosaggio = "100mg")
-                ),
-                prossimeAssunzioni = emptyList(),
-                assunteOggi = 1,
-                totaliOggi = 4,
-                isLoading = false
-            ),
-            onAssumiClick = {},
-            onAnnullaClick = {},
-            onAddMedicineButtonClick = {},
-            onUserSettingsButtonClick = {},
-            onFrequenzaButtonClick = {},
-            onMedicinaliButtonClick = {}
-        )
+        Scaffold { innerPadding ->
+            CompositionLocalProvider(LocalSnackbarHostState provides remember { SnackbarHostState() }) {
+                Home(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding),
+                    uiState = HomeUiState(
+                        prossimaAssunzione = null,
+                        puoAssumereOra = true,
+                        prossimaInRitardo = assunzioneDiProva(1, "Faringel", LocalTime.now().minusHours(5), "1 bustina"),
+                        inRitardo = listOf(
+                            assunzioneDiProva(2, "Aspirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
+                            assunzioneDiProva(3, "Tachipirina", LocalTime.now().minusHours(2), dosaggio = "100mg"),
+                            assunzioneDiProva(4, "Omeprazolo", LocalTime.now().minusHours(2), dosaggio = "100mg")
+                        ),
+                        prossimeAssunzioni = emptyList(),
+                        assunteOggi = 1,
+                        totaliOggi = 4,
+                        isLoading = false
+                    ),
+                    onAssumiClick = {},
+                    onAnnullaClick = {},
+                    onAddMedicineButtonClick = {},
+                    onUserSettingsButtonClick = {},
+                    onFrequenzaButtonClick = {},
+                    onMedicinaliButtonClick = {}
+                )
+            }
+        }
     }
 }
 
@@ -1101,15 +1242,17 @@ fun HomeScreenInRitardoPreview() {
 @Composable
 fun HomeScreenVuotaPreview() {
     AppTheme {
-        Home(
-            uiState = HomeUiState(isLoading = false),
-            onAssumiClick = {},
-            onAnnullaClick = {},
-            onAddMedicineButtonClick = {},
-            onUserSettingsButtonClick = {},
-            onFrequenzaButtonClick = {},
-            onMedicinaliButtonClick = {}
-        )
+        CompositionLocalProvider(LocalSnackbarHostState provides remember { SnackbarHostState() }) {
+            Home(
+                uiState = HomeUiState(isLoading = false),
+                onAssumiClick = {},
+                onAnnullaClick = {},
+                onAddMedicineButtonClick = {},
+                onUserSettingsButtonClick = {},
+                onFrequenzaButtonClick = {},
+                onMedicinaliButtonClick = {}
+            )
+        }
     }
 }
 
@@ -1117,15 +1260,17 @@ fun HomeScreenVuotaPreview() {
 @Composable
 fun HomeScreenConMedicinaleNonAttivoPreview() {
     AppTheme {
-        Home(
-            uiState = HomeUiState(isLoading = false, esisteAlmenoUnMedicinale = true),
-            onAssumiClick = {},
-            onAnnullaClick = {},
-            onAddMedicineButtonClick = {},
-            onUserSettingsButtonClick = {},
-            onFrequenzaButtonClick = {},
-            onMedicinaliButtonClick = {}
-        )
+        CompositionLocalProvider(LocalSnackbarHostState provides remember { SnackbarHostState() }) {
+            Home(
+                uiState = HomeUiState(isLoading = false, esisteAlmenoUnMedicinale = true),
+                onAssumiClick = {},
+                onAnnullaClick = {},
+                onAddMedicineButtonClick = {},
+                onUserSettingsButtonClick = {},
+                onFrequenzaButtonClick = {},
+                onMedicinaliButtonClick = {}
+            )
+        }
     }
 }
 
@@ -1133,19 +1278,21 @@ fun HomeScreenConMedicinaleNonAttivoPreview() {
 @Composable
 fun HomeScreenCompletataPreview() {
     AppTheme {
-        Home(
-            uiState = HomeUiState(
-                assunteOggi = 3,
-                totaliOggi = 3,
-                isLoading = false
-            ),
-            onAssumiClick = {},
-            onAnnullaClick = {},
-            onAddMedicineButtonClick = {},
-            onUserSettingsButtonClick = {},
-            onFrequenzaButtonClick = {},
-            onMedicinaliButtonClick = {}
-        )
+        CompositionLocalProvider(LocalSnackbarHostState provides remember { SnackbarHostState() }) {
+            Home(
+                uiState = HomeUiState(
+                    assunteOggi = 3,
+                    totaliOggi = 3,
+                    isLoading = false
+                ),
+                onAssumiClick = {},
+                onAnnullaClick = {},
+                onAddMedicineButtonClick = {},
+                onUserSettingsButtonClick = {},
+                onFrequenzaButtonClick = {},
+                onMedicinaliButtonClick = {}
+            )
+        }
     }
 }
 

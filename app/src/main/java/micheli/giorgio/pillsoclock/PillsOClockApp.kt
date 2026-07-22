@@ -1,6 +1,10 @@
 package micheli.giorgio.pillsoclock
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -14,18 +18,22 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import micheli.giorgio.pillsoclock.data.local.AppDatabase
 import micheli.giorgio.pillsoclock.data.repository.AssunzioneRepositoryImpl
+import micheli.giorgio.pillsoclock.data.repository.ImpostazioniRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.MedicinaleRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.UtenteRepositoryImpl
 import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorker
 import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorkerFactory
 import micheli.giorgio.pillsoclock.domain.model.Utente
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
+import micheli.giorgio.pillsoclock.domain.repository.ImpostazioniRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "impostazioni")
 
 /**
  * Application è una classe base di Android che rappresenta lo stato globale dell'app.
@@ -72,6 +80,10 @@ class PillsOClockApp : Application(), Configuration.Provider {
             database.assunzioniPrevisteDao(),
             database.assunzioniEffettuateDao()
         )
+    }
+
+    val impostazioniRepository: ImpostazioniRepository by lazy {
+        ImpostazioniRepositoryImpl(dataStore)
     }
 
     // Configuration.Provider richiede di sovrascrivere workManagerConfiguration

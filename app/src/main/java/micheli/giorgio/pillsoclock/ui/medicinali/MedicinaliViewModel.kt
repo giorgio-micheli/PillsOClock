@@ -75,7 +75,7 @@ class MedicinaliViewModel(
 
     fun onEliminaClick(medicinale: Medicinale) {
         viewModelScope.launch(Dispatchers.IO) {
-            medicinaleRepository.eliminaMedicinale(medicinale)
+            medicinaleRepository.eliminaMedicinale(medicinale.id)
         }
     }
 }

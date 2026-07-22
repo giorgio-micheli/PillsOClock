@@ -277,12 +277,7 @@ private fun MedicinaleCard(
     val shape = RoundedCornerShape(20.dp)
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .combinedClickable(
-                onClick = { if (!confermaEliminazioneVisibile) onClick() },
-                onLongClick = { confermaEliminazioneVisibile = true }
-            ),
+            .fillMaxWidth(),
         shape = shape,
         colors = CardDefaults.cardColors(
             containerColor = color,
@@ -293,33 +288,42 @@ private fun MedicinaleCard(
             }
         ),
         //border = BorderStroke(2.dp, if (confermaEliminazioneVisibile) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
-        AnimatedContent(
-            targetState = confermaEliminazioneVisibile,
-            transitionSpec = {
-                (fadeIn(tween(150)) + scaleIn(initialScale = 0.92f, animationSpec = tween(150))) togetherWith
-                        (fadeOut(tween(120)) + scaleOut(targetScale = 0.92f, animationSpec = tween(120))) using
-                        SizeTransform(clip = false)
-            },
-            label = "confermaEliminazione"
-        ) { inConferma ->
-            if (inConferma) {
-                RigaConfermaEliminazione(
-                    nomeMedicinale = medicinale.nome,
-                    onConferma = {
-                        confermaEliminazioneVisibile = false
-                        onEliminaClick()
-                    },
-                    onAnnulla = { confermaEliminazioneVisibile = false }
+        Box(
+            modifier = Modifier
+                .clip(shape)
+                .combinedClickable(
+                    onClick = { if (!confermaEliminazioneVisibile) onClick() },
+                    onLongClick = { confermaEliminazioneVisibile = true }
                 )
-            } else {
-                RigaMedicinale(
-                    medicinaleConPiano = medicinaleConPiano,
-                    inGrigio = inGrigio,
-                    scaduto = scaduto,
-                    onToggleAttivoClick = onToggleAttivoClick
-                )
+        ) {
+            AnimatedContent(
+                targetState = confermaEliminazioneVisibile,
+                transitionSpec = {
+                    (fadeIn(tween(150)) + scaleIn(initialScale = 0.92f, animationSpec = tween(150))) togetherWith
+                            (fadeOut(tween(120)) + scaleOut(targetScale = 0.92f, animationSpec = tween(120))) using
+                            SizeTransform(clip = false)
+                },
+                label = "confermaEliminazione"
+            ) { inConferma ->
+                if (inConferma) {
+                    RigaConfermaEliminazione(
+                        nomeMedicinale = medicinale.nome,
+                        onConferma = {
+                            confermaEliminazioneVisibile = false
+                            onEliminaClick()
+                        },
+                        onAnnulla = { confermaEliminazioneVisibile = false }
+                    )
+                } else {
+                    RigaMedicinale(
+                        medicinaleConPiano = medicinaleConPiano,
+                        inGrigio = inGrigio,
+                        scaduto = scaduto,
+                        onToggleAttivoClick = onToggleAttivoClick
+                    )
+                }
             }
         }
     }

@@ -14,7 +14,10 @@ import micheli.giorgio.pillsoclock.domain.model.PianoConOrari
  */
 fun PianoConOrariEntity.toDomain(): PianoConOrari = PianoConOrari(
     piano = piano.toDomain(),
-    orari = orari.map { it.toDomain() }
+    // Gli orari disattivati (rimossi dal piano ma mantenuti per non perdere
+    // lo storico di AssunzionePrevista/AssunzioneEffettuata) non vanno mai
+    // esposti al domain: da qui in poi ogni lista di orari è "solo attivi".
+    orari = orari.filter { it.attivo }.map { it.toDomain() }
 )
 
 fun MedicinaleConPianoEOrariEntity.toDomain(): MedicinaleConPianoEOrari = MedicinaleConPianoEOrari(

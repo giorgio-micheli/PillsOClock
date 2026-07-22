@@ -2,6 +2,7 @@ package micheli.giorgio.pillsoclock.data.repository
 
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import micheli.giorgio.pillsoclock.data.local.dao.MedicinaliDao
 import micheli.giorgio.pillsoclock.data.local.dao.OrariAssunzioniDao
@@ -73,10 +74,29 @@ class MedicinaleRepositoryImpl (
         nuoviOrari: List<OrarioAssunzione>
     ) {
         pianoAssunzioneDao.update(piano.toEntity())
-        orarioAssunzioneDao.deleteAllByPiano(piano.id)
-        orarioAssunzioneDao.insertAll(
-            nuoviOrari.map { it.copy(idPianoAssunzione = piano.id).toEntity() }
-        )
+
+        // Diff invece di delete-all/recreate: preserva l'id degli orari invariati
+        // così AssunzionePrevista/AssunzioneEffettuata storiche non vengono perse
+        // per un cascade delete indesiderato (vedi OrarioAssunzioneEntity onDelete = CASCADE).
+        val orariEsistenti = orarioAssunzioneDao.getOrariByPiano(piano.id).first()
+        val esistentiPerOrario = orariEsistenti.associateBy { it.orario }
+        val nuoviValori = nuoviOrari.map { it.orario }.toSet()
+
+        // Orari rimossi dal piano: soft delete, la cronologia resta intatta
+        orariEsistenti
+            .filter { it.attivo && it.orario !in nuoviValori }
+            .forEach { orarioAssunzioneDao.disattiva(it.id) }
+
+        nuoviOrari.forEach { nuovo ->
+            val esistente = esistentiPerOrario[nuovo.orario]
+            when {
+                esistente == null ->
+                    orarioAssunzioneDao.insert(nuovo.copy(idPianoAssunzione = piano.id).toEntity())
+                !esistente.attivo ->
+                    orarioAssunzioneDao.attiva(esistente.id)
+                // esistente già attivo con lo stesso orario: id stabile, nessuna azione
+            }
+        }
     }
 
     override suspend fun disattivaMedicinale(id: Int) =
@@ -85,6 +105,6 @@ class MedicinaleRepositoryImpl (
     override suspend fun attivaMedicinale(id: Int) =
         medicinaleDao.attiva(id)
 
-    override suspend fun eliminaMedicinale(medicinale: Medicinale) =
-        medicinaleDao.delete(medicinale.toEntity())
+    override suspend fun eliminaMedicinale(id: Int) =
+        medicinaleDao.elimina(id)
 }

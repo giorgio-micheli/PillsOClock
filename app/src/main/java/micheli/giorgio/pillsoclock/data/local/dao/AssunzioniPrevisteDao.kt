@@ -66,6 +66,19 @@ interface AssunzioniPrevisteDao {
             "(SELECT id FROM medicinali WHERE id_utente = :idUtente)))")
     suspend fun segnaVecchieComeSaltate(idUtente: Int, oggi: LocalDate)
 
+
+    @Query(
+        """
+            DELETE FROM assunzioni_previste
+            WHERE stato = 'IN_ATTESA' AND id_orario_assunzione IN (
+                SELECT id
+                FROM orari_assunzioni
+                WHERE id_piano_assunzione = :idPiano
+            )
+        """
+    )
+    suspend fun deleteAssunzioniPrevisteByPiano(idPiano: Int)
+
     @Delete
     suspend fun delete(assunzionePrevista: AssunzionePrevistaEntity)
 }

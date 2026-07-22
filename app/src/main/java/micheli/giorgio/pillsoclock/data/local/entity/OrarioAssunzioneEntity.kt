@@ -33,5 +33,7 @@ data class OrarioAssunzioneEntity(
     @ColumnInfo(name = "id_piano_assunzione")
     val idPianoAssunzione: Int,
 
-    val orario: LocalTime
+    val orario: LocalTime,
+
+    val attivo: Boolean = true
 )

@@ -47,7 +47,7 @@ class FrequenzaGiornoViewModel(
                         Log.d("FrequenzaGiornoViewModel", "Utente non trovato")
                         flowOf(FrequenzaGiornoUiState(data = data, isLoading = true))
                     } else {
-                        assunzioneRepository.getAssunzioniGiornaliere(utente.id, data)
+                        assunzioneRepository.getAssunzioniGiornaliereStorico(utente.id, data)
                             .map { assunzioni ->
                                 FrequenzaGiornoUiState(
                                     data = data,

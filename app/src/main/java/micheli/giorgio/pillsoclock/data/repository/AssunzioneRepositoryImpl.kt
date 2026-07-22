@@ -27,6 +27,10 @@ class AssunzioneRepositoryImpl (
         assunzioneEffettuataDao.getAssunzioniGiornaliere(idUtente, data)
             .map { assunzioni -> assunzioni.map { it.toDomain() } }
 
+    override fun getAssunzioniGiornaliereStorico(idUtente: Int, data: LocalDate) =
+        assunzioneEffettuataDao.getAssunzioniGiornaliereStorico(idUtente, data)
+            .map { assunzioni -> assunzioni.map { it.toDomain() } }
+
 
     override fun getGiorniConAssunzioni(idUtente: Int, dataInizio: LocalDate, dataFine: LocalDate) =
         assunzionePrevistaDao.getGiorniConAssunzioni(idUtente, dataInizio, dataFine)
@@ -93,6 +97,10 @@ class AssunzioneRepositoryImpl (
     override suspend fun annullaAssunzione(assunzionePrevista: AssunzionePrevista) {
         assunzioneEffettuataDao.deleteByPrevista(assunzionePrevista.id)
         assunzionePrevistaDao.aggiornaStato(assunzionePrevista.id, "IN_ATTESA")
+    }
+
+    override suspend fun deleteAssunzioniPrevisteFromPiano(idPiano: Int) {
+        assunzionePrevistaDao.deleteAssunzioniPrevisteByPiano(idPiano)
     }
 
     override suspend fun segnaVecchieComeSaltate(idUtente: Int) =

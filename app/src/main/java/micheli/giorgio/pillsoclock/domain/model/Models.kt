@@ -14,7 +14,8 @@ data class Medicinale(
     val note: String?,
     val attivo: Boolean,
     val dataInizio: LocalDate,
-    val dataFine: LocalDate?
+    val dataFine: LocalDate?,
+    val eliminato: Boolean = false
 )
 
 data class PianoAssunzione(

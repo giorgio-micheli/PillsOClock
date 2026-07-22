@@ -100,14 +100,12 @@ class HomeViewModel(
         now: LocalDateTime,
         medicinaleExist: Boolean
     ): HomeUiState {
-        val oraCorrente = now.toLocalTime()
-
         val inAttesa = assunzioni.filter {
             it.assunzionePrevista.stato == StatoAssunzione.IN_ATTESA
         }
 
         val (inRitardo, restanti) = inAttesa.partition {
-            èInRitardo(it.assunzionePrevista.orarioPrevisto, oraCorrente)
+            èInRitardo(it.assunzionePrevista.orarioPrevisto, now)
         }
 
         val restantiOrdinate = restanti.sortedBy { it.assunzionePrevista.orarioPrevisto }
@@ -117,13 +115,17 @@ class HomeViewModel(
         val prossimaInRitardo = inRitardoOrdinate.firstOrNull()
 
         val inCoda = restantiOrdinate.drop(1)
-        val restantiInRitardo = inRitardoOrdinate.drop(1)
+        // Il riquadro principale mostra prossimaInRitardo solo quando non c'è una
+        // prossima assunzione futura (vedi soloAssunzioniInRitardoRimaste in HomeScreen).
+        // Se invece prossima != null il riquadro mostra quella, quindi prossimaInRitardo
+        // non va scartato qui: andrebbe altrimenti perso senza comparire da nessuna parte.
+        val restantiInRitardo = if (prossima == null) inRitardoOrdinate.drop(1) else inRitardoOrdinate
 
         return HomeUiState(
             prossimaAssunzione = prossima,
             prossimaInRitardo = prossimaInRitardo,
             puoAssumereOra = prossima?.let {
-                èNellaFinestra(it.assunzionePrevista.orarioPrevisto, oraCorrente)
+                èNellaFinestra(it.assunzionePrevista.orarioPrevisto, now)
             } ?: false,
             inRitardo = restantiInRitardo,
             prossimeAssunzioni = inCoda,
@@ -134,13 +136,20 @@ class HomeViewModel(
         )
     }
 
-    private fun èInRitardo(orarioPrevisto: LocalTime, oraCorrente: LocalTime): Boolean =
-        orarioPrevisto.plusMinutes(FINESTRA_ASSUNZIONE_MINUTI).isBefore(oraCorrente)
+    // orarioPrevisto è sempre riferito a "oggi" (le AssunzionePrevista sono generate
+    // con data = LocalDate.now()), quindi lo ancoriamo alla data di `now` e confrontiamo
+    // LocalDateTime pieni: a differenza di LocalTime, plusMinutes/minusMinutes qui
+    // attraversa correttamente la mezzanotte invece di avvolgere ciclicamente il quadrante.
+    private fun èInRitardo(orarioPrevisto: LocalTime, now: LocalDateTime): Boolean {
+        val previsto = now.toLocalDate().atTime(orarioPrevisto)
+        return previsto.plusMinutes(FINESTRA_ASSUNZIONE_MINUTI).isBefore(now)
+    }
 
-    private fun èNellaFinestra(orarioPrevisto: LocalTime, oraCorrente: LocalTime): Boolean {
-        val inizioFinestra = orarioPrevisto.minusMinutes(FINESTRA_ASSUNZIONE_MINUTI)
-        val fineFinestra = orarioPrevisto.plusMinutes(FINESTRA_ASSUNZIONE_MINUTI)
-        return !oraCorrente.isBefore(inizioFinestra) && !oraCorrente.isAfter(fineFinestra)
+    private fun èNellaFinestra(orarioPrevisto: LocalTime, now: LocalDateTime): Boolean {
+        val previsto = now.toLocalDate().atTime(orarioPrevisto)
+        val inizioFinestra = previsto.minusMinutes(FINESTRA_ASSUNZIONE_MINUTI)
+        val fineFinestra = previsto.plusMinutes(FINESTRA_ASSUNZIONE_MINUTI)
+        return !now.isBefore(inizioFinestra) && !now.isAfter(fineFinestra)
     }
 
     fun onAssumiClick(assunzionePrevista: AssunzionePrevista) {

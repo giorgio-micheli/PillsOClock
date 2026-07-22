@@ -26,14 +26,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 
 /**
@@ -63,16 +64,35 @@ data class SettingsSection(
     val items: List<SettingsItem>
 )
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToAccountScreen: () -> Unit
     // Se ci serviranno delle callback per navigare nelle altre sezioni andranno aggiunte qui
 ) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PillsOClockApp
 
-    var darkModeEnabled by remember { mutableStateOf(false) }
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = SettingsViewModelFactory(app.impostazioniRepository)
+    )
 
+    val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    Settings(
+        uiState = uiState,
+        onDarkModeToggle = settingsViewModel::onDarkModeToggle,
+        onNavigateToAccountScreen = onNavigateToAccountScreen
+    )
+}
+
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Settings(
+    uiState: SettingsUiState,
+    onDarkModeToggle: (Boolean) -> Unit,
+    onNavigateToAccountScreen: () -> Unit
+) {
     // Dichiaro e definisco le varie sezioni che saranno presenti nella schermata
     val sections = listOf(
         SettingsSection(
@@ -85,8 +105,8 @@ fun SettingsScreen(
                 ),
                 SettingsItem.Toggle(
                     title = "Dark mode",
-                    checked = darkModeEnabled,
-                    onCheckedChange = { darkModeEnabled = it }
+                    checked = uiState.darkModeAbilitata,
+                    onCheckedChange = onDarkModeToggle
                 )
             )
         )
@@ -184,7 +204,9 @@ private fun SettingsClickableRow(item: SettingsItem.Clickable) {
 @Composable
 fun SettingsScreenPreview() {
     AppTheme {
-        SettingsScreen(
+        Settings(
+            uiState = SettingsUiState(),
+            onDarkModeToggle = {},
             onNavigateToAccountScreen = {}
         )
     }

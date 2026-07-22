@@ -11,7 +11,8 @@ fun MedicinaleEntity.toDomain(): Medicinale = Medicinale(
     note = note,
     attivo = attivo,
     dataInizio = dataInizio,
-    dataFine = dataFine
+    dataFine = dataFine,
+    eliminato = eliminato
 )
 
 fun Medicinale.toEntity(): MedicinaleEntity = MedicinaleEntity(
@@ -22,5 +23,6 @@ fun Medicinale.toEntity(): MedicinaleEntity = MedicinaleEntity(
     note = note,
     attivo = attivo,
     dataInizio = dataInizio,
-    dataFine = dataFine
+    dataFine = dataFine,
+    eliminato = eliminato
 )

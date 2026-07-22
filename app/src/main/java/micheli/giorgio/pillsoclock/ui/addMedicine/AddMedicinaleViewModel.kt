@@ -50,11 +50,13 @@ class AddMedicinaleViewModel(
     val uiState = _uiState.asStateFlow()
 
     // Dati del medicinale in modifica non esposti alla UI ma necessari per l'update:
-    // idUtente e attivo non sono modificabili dal bottom sheet (attivo si gestisce
-    // dalla lista con lo switch), ma vanno preservati quando si salva.
+    // idUtente, attivo ed eliminato non sono modificabili dal bottom sheet (attivo si
+    // gestisce dalla lista con lo switch, eliminato con l'eliminazione), ma vanno
+    // preservati quando si salva per non azzerarli con l'update.
     private var idPianoInModifica: Int? = null
     private var idUtenteInModifica: Int? = null
     private var attivoInModifica: Boolean = true
+    private var eliminatoInModifica: Boolean = false
 
     init {
         if (idMedicinale != null) {
@@ -76,6 +78,7 @@ class AddMedicinaleViewModel(
 
             idUtenteInModifica = medicinale.idUtente
             attivoInModifica = medicinale.attivo
+            eliminatoInModifica = medicinale.eliminato
             idPianoInModifica = pianoConOrari?.piano?.id
 
             _uiState.update {
@@ -169,7 +172,7 @@ class AddMedicinaleViewModel(
 
                 if (idMedicinale != null) {
                     // Modalità modifica: aggiorno il medicinale e il piano esistenti,
-                    // preservando idUtente e attivo (non gestiti da questo bottom sheet).
+                    // preservando idUtente, attivo ed eliminato (non gestiti da questo bottom sheet).
                     val medicinale = Medicinale(
                         id = idMedicinale,
                         idUtente = idUtenteInModifica ?: return@launch,
@@ -178,7 +181,8 @@ class AddMedicinaleViewModel(
                         note = stato.note.trim().ifEmpty { null },
                         attivo = attivoInModifica,
                         dataInizio = stato.dataInizio,
-                        dataFine = stato.dataFine
+                        dataFine = stato.dataFine,
+                        eliminato = eliminatoInModifica
                     )
                     val piano = PianoAssunzione(
                         id = idPianoInModifica ?: return@launch,
@@ -191,6 +195,22 @@ class AddMedicinaleViewModel(
                     )
                     medicinaleRepository.aggiornaMedicinale(medicinale)
                     medicinaleRepository.aggiornaPianoEOrari(piano, orari)
+
+                    // Le assunzioni previste di oggi ancora in attesa vanno rigenerate in base
+                    // al piano/orari appena aggiornati (quelle già ASSUNTA non vengono toccate).
+                    assunzioneRepository.deleteAssunzioniPrevisteFromPiano(piano.id)
+
+                    val medicinaleAggiornato = medicinaleRepository
+                        .getMedicinaleConPianoEOrari(idMedicinale)
+                        .firstOrNull()
+
+                    if (medicinaleAggiornato != null) {
+                        assunzioneRepository.generaAssunzioniPerGiorno(
+                            idUtenteInModifica ?: return@launch,
+                            LocalDate.now(),
+                            listOf(medicinaleAggiornato)
+                        )
+                    }
                 } else {
                     val utente = utenteRepository.getUtente().firstOrNull()
                     if (utente == null) {

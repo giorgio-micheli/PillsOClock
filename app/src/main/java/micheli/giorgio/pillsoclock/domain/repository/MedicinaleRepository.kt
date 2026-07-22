@@ -35,6 +35,6 @@ interface MedicinaleRepository {
 
     suspend fun attivaMedicinale(id: Int)
 
-    suspend fun eliminaMedicinale(medicinale: Medicinale)
+    suspend fun eliminaMedicinale(id: Int)
 
 }
