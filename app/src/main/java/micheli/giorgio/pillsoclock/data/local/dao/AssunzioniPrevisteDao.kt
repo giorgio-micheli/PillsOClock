@@ -79,6 +79,18 @@ interface AssunzioniPrevisteDao {
     )
     suspend fun deleteAssunzioniPrevisteByPiano(idPiano: Int)
 
+    @Query(
+        """
+            SELECT * FROM assunzioni_previste
+            WHERE stato = 'IN_ATTESA' AND data = :data AND id_orario_assunzione IN (
+                SELECT id
+                FROM orari_assunzioni
+                WHERE id_piano_assunzione = :idPiano
+            )
+        """
+    )
+    suspend fun getAssunzioniInAttesaOggiPerPiano(idPiano: Int, data: LocalDate): List<AssunzionePrevistaEntity>
+
     @Delete
     suspend fun delete(assunzionePrevista: AssunzionePrevistaEntity)
 }

@@ -17,6 +17,7 @@ data class UtenteEntity(
     val id: Int,
 
     val nome: String,
+    val cognome: String,
     val email: String,
 
     @ColumnInfo("data_registrazione")

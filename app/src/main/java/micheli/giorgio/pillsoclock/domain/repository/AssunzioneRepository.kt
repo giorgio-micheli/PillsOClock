@@ -6,6 +6,7 @@ import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
 import micheli.giorgio.pillsoclock.domain.model.MedicinaleConPianoEOrari
 import micheli.giorgio.pillsoclock.domain.model.PianoAssunzione
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 interface AssunzioneRepository {
 
@@ -27,12 +28,18 @@ interface AssunzioneRepository {
 
     fun isPianoAttivoInData(piano: PianoAssunzione, data: LocalDate): Boolean
 
-    suspend fun registraAssunzione(assunzionePrevista: AssunzionePrevista, idUtente: Int)
+    suspend fun registraAssunzione(
+        assunzionePrevista: AssunzionePrevista,
+        idUtente: Int,
+        timestamp: LocalDateTime = LocalDateTime.now()
+    )
 
     suspend fun annullaAssunzione(assunzionePrevista: AssunzionePrevista)
 
     suspend fun deleteAssunzioniPrevisteFromPiano(idPiano: Int)
 
     suspend fun segnaVecchieComeSaltate(idUtente: Int)
+
+    suspend fun getAssunzioniPrevisteInAttesaOggiPerPiano(idPiano: Int, data: LocalDate): List<AssunzionePrevista>
 
 }

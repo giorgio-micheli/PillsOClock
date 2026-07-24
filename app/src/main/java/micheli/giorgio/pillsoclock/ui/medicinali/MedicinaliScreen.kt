@@ -91,7 +91,9 @@ fun MedicinaliScreen(
     val medicinaliViewModel: MedicinaliViewModel = viewModel(
         factory = MedicinaliViewModelFactory(
             medicinaleRepository = app.medicinaleRepository,
-            utenteRepository = app.utenteRepository
+            utenteRepository = app.utenteRepository,
+            assunzioneRepository = app.assunzioneRepository,
+            promemoriaRepository = app.promemoriaRepository
         )
     )
 

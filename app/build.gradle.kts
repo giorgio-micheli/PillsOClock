@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    // Google plugin to read google-services.json
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -82,6 +84,11 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     // DataStore (Preferences), per le impostazioni utente (es. dark mode)
     implementation(libs.androidx.datastore.preferences)
+
+    // Firebase bom
+    implementation(platform(libs.firebase.bom))
+    // Firebase analytics
+    implementation(libs.firebase.analytics)
 }
 
 ksp {

@@ -140,7 +140,8 @@ fun AddMedicinale(
             app.medicinaleRepository,
             app.utenteRepository,
             idMedicinale,
-            app.assunzioneRepository
+            app.assunzioneRepository,
+            app.promemoriaRepository
         )
     )
 

@@ -21,10 +21,12 @@ import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
 import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
+import micheli.giorgio.pillsoclock.domain.repository.PromemoriaRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 
 private const val FINESTRA_ASSUNZIONE_MINUTI = 5L
 private const val INTERVALLO_TICK_MS = 15_000L
@@ -33,6 +35,8 @@ data class HomeUiState(
     val prossimaAssunzione: AssunzioneGiornaliera? = null,
     val puoAssumereOra: Boolean = false,
     val prossimaInRitardo: AssunzioneGiornaliera? = null,
+    val minutiAllaProssima: Long? = null,
+    val minutiRitardo: Long? = null,
     val inRitardo: List<AssunzioneGiornaliera> = emptyList(),
     val prossimeAssunzioni: List<AssunzioneGiornaliera> = emptyList(),
     val esisteAlmenoUnMedicinale: Boolean = false,
@@ -45,7 +49,8 @@ data class HomeUiState(
 class HomeViewModel(
     private val medicinaliRepository: MedicinaleRepository,
     private val assunzioneRepository: AssunzioneRepository,
-    private val utenteRepository: UtenteRepository
+    private val utenteRepository: UtenteRepository,
+    private val promemoriaRepository: PromemoriaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -121,9 +126,18 @@ class HomeViewModel(
         // non va scartato qui: andrebbe altrimenti perso senza comparire da nessuna parte.
         val restantiInRitardo = if (prossima == null) inRitardoOrdinate.drop(1) else inRitardoOrdinate
 
+        val minutiAllaProssima = prossima?.let {
+            ChronoUnit.MINUTES.between(now, now.toLocalDate().atTime(it.assunzionePrevista.orarioPrevisto))
+        }?.coerceAtLeast(0)
+        val minutiRitardo = prossimaInRitardo?.let {
+            ChronoUnit.MINUTES.between(now.toLocalDate().atTime(it.assunzionePrevista.orarioPrevisto), now)
+        }?.coerceAtLeast(0)
+
         return HomeUiState(
             prossimaAssunzione = prossima,
             prossimaInRitardo = prossimaInRitardo,
+            minutiAllaProssima = minutiAllaProssima,
+            minutiRitardo = minutiRitardo,
             puoAssumereOra = prossima?.let {
                 èNellaFinestra(it.assunzionePrevista.orarioPrevisto, now)
             } ?: false,
@@ -157,12 +171,34 @@ class HomeViewModel(
             // firstOrNull() ritorna il primo elemento del flow o altrimenti null nel caso il flow sia vuoto
             val utente = utenteRepository.getUtente().firstOrNull() ?: return@launch
             assunzioneRepository.registraAssunzione(assunzionePrevista, utente.id)
+            promemoriaRepository.cancella(assunzionePrevista.id)
         }
     }
 
-    fun onAnnullaClick(assunzionePrevista: AssunzionePrevista) {
+    // Per le dosi "in ritardo" prese puntualmente ma confermate tardi sull'app:
+    // registra l'assunzione con l'orario previsto invece di quello del click.
+    fun onAssumiPuntualeClick(assunzionePrevista: AssunzionePrevista) {
         viewModelScope.launch {
+            val utente = utenteRepository.getUtente().firstOrNull() ?: return@launch
+            val timestamp = assunzionePrevista.data.atTime(assunzionePrevista.orarioPrevisto)
+            assunzioneRepository.registraAssunzione(assunzionePrevista, utente.id, timestamp)
+            promemoriaRepository.cancella(assunzionePrevista.id)
+        }
+    }
+
+    fun onAnnullaClick(assunzioneGiornaliera: AssunzioneGiornaliera) {
+        viewModelScope.launch {
+            val assunzionePrevista = assunzioneGiornaliera.assunzionePrevista
             assunzioneRepository.annullaAssunzione(assunzionePrevista)
+            // Se l'orario previsto è già passato (dose in ritardo annullata), pianifica()
+            // se ne accorge da sola e non fa scattare un allarme immediato per il passato.
+            promemoriaRepository.pianifica(
+                assunzionePrevista.id,
+                assunzionePrevista.data,
+                assunzionePrevista.orarioPrevisto,
+                assunzioneGiornaliera.nomeMedicinale,
+                assunzioneGiornaliera.dosaggio
+            )
         }
     }
 }

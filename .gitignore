@@ -71,4 +71,4 @@ $RECYCLE.BIN/
 # ==========================
 # FIREBASE / GOOGLE SERVICES
 # ==========================
-google-services.json
+app/google-services.json

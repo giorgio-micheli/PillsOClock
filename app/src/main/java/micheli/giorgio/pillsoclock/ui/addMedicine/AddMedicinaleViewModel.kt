@@ -8,12 +8,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.domain.model.Medicinale
 import micheli.giorgio.pillsoclock.domain.model.OrarioAssunzione
 import micheli.giorgio.pillsoclock.domain.model.PianoAssunzione
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
+import micheli.giorgio.pillsoclock.domain.repository.PromemoriaRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
 import java.time.LocalDate
 import java.time.LocalTime
@@ -43,6 +45,7 @@ class AddMedicinaleViewModel(
     val medicinaleRepository: MedicinaleRepository,
     val utenteRepository: UtenteRepository,
     val assunzioneRepository: AssunzioneRepository,
+    val promemoriaRepository: PromemoriaRepository,
     private val idMedicinale: Int? = null
 ) : ViewModel() {
 
@@ -196,6 +199,12 @@ class AddMedicinaleViewModel(
                     medicinaleRepository.aggiornaMedicinale(medicinale)
                     medicinaleRepository.aggiornaPianoEOrari(piano, orari)
 
+                    // Cancella gli allarmi dei vecchi orari prima che le relative
+                    // AssunzionePrevista spariscano dal DB (vedi sotto).
+                    val oggi = LocalDate.now()
+                    assunzioneRepository.getAssunzioniPrevisteInAttesaOggiPerPiano(piano.id, oggi)
+                        .forEach { promemoriaRepository.cancella(it.id) }
+
                     // Le assunzioni previste di oggi ancora in attesa vanno rigenerate in base
                     // al piano/orari appena aggiornati (quelle già ASSUNTA non vengono toccate).
                     assunzioneRepository.deleteAssunzioniPrevisteFromPiano(piano.id)
@@ -207,9 +216,16 @@ class AddMedicinaleViewModel(
                     if (medicinaleAggiornato != null) {
                         assunzioneRepository.generaAssunzioniPerGiorno(
                             idUtenteInModifica ?: return@launch,
-                            LocalDate.now(),
+                            oggi,
                             listOf(medicinaleAggiornato)
                         )
+
+                        val nomeMedicinale = stato.nome.trim()
+                        val dosaggio = stato.dosaggio.trim().ifEmpty { null }
+                        assunzioneRepository.getAssunzioniPrevisteInAttesaOggiPerPiano(piano.id, oggi)
+                            .forEach {
+                                promemoriaRepository.pianifica(it.id, it.data, it.orarioPrevisto, nomeMedicinale, dosaggio)
+                            }
                     }
                 } else {
                     val utente = utenteRepository.getUtente().firstOrNull()
@@ -254,6 +270,23 @@ class AddMedicinaleViewModel(
                                 LocalDate.now(),
                                 medicinali
                             )
+
+                            // Pianifica i promemoria per il medicinale appena creato (e per
+                            // qualunque altro ancora in attesa oggi): non abbiamo l'id reale
+                            // del piano appena inserito, quindi risincronizziamo l'intera
+                            // giornata, stesso pattern già usato in GeneraAssunzioniWorker.
+                            assunzioneRepository.getAssunzioniGiornaliere(utente.id, LocalDate.now())
+                                .firstOrNull()
+                                ?.filter { it.assunzionePrevista.stato == StatoAssunzione.IN_ATTESA }
+                                ?.forEach {
+                                    promemoriaRepository.pianifica(
+                                        it.assunzionePrevista.id,
+                                        it.assunzionePrevista.data,
+                                        it.assunzionePrevista.orarioPrevisto,
+                                        it.nomeMedicinale,
+                                        it.dosaggio
+                                    )
+                                }
                         }
                     }
                 }

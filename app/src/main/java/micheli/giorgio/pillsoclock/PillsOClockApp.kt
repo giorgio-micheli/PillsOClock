@@ -1,6 +1,8 @@
 package micheli.giorgio.pillsoclock
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -20,6 +22,7 @@ import micheli.giorgio.pillsoclock.data.local.AppDatabase
 import micheli.giorgio.pillsoclock.data.repository.AssunzioneRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.ImpostazioniRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.MedicinaleRepositoryImpl
+import micheli.giorgio.pillsoclock.data.repository.PromemoriaRepositoryImpl
 import micheli.giorgio.pillsoclock.data.repository.UtenteRepositoryImpl
 import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorker
 import micheli.giorgio.pillsoclock.data.workers.GeneraAssunzioniWorkerFactory
@@ -27,7 +30,9 @@ import micheli.giorgio.pillsoclock.domain.model.Utente
 import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.ImpostazioniRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
+import micheli.giorgio.pillsoclock.domain.repository.PromemoriaRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
+import micheli.giorgio.pillsoclock.notifications.AssunzioneNotificationHelper
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -86,6 +91,10 @@ class PillsOClockApp : Application(), Configuration.Provider {
         ImpostazioniRepositoryImpl(dataStore)
     }
 
+    val promemoriaRepository: PromemoriaRepository by lazy {
+        PromemoriaRepositoryImpl(this)
+    }
+
     // Configuration.Provider richiede di sovrascrivere workManagerConfiguration
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -93,13 +102,15 @@ class PillsOClockApp : Application(), Configuration.Provider {
                 GeneraAssunzioniWorkerFactory(
                     medicinaleRepository,
                     assunzioneRepository,
-                    utenteRepository
+                    utenteRepository,
+                    promemoriaRepository
                 )
             )
             .build()
 
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannel()
         inizializzaUtente()
         pianificaGenerazioneGiornaliera()
         eseguiGenerazioneImmediata()
@@ -110,7 +121,7 @@ class PillsOClockApp : Application(), Configuration.Provider {
             val utente = database.utentiDao().getUtente().firstOrNull()
             if (utente == null) {
                 utenteRepository.inserisciUtente(
-                    Utente(0, "", "", LocalDate.now())
+                    Utente(0, "", "", "", LocalDate.now())
                 )
             }
         }
@@ -147,5 +158,20 @@ class PillsOClockApp : Application(), Configuration.Provider {
             ExistingWorkPolicy.KEEP, // se è già in coda o in esecuzione non la riesegue
             requestImmediata
         )
+    }
+
+    /**
+     * Crea l'unico notification channel per le notifiche di questa app
+     */
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            AssunzioneNotificationHelper.ASSUNZIONE_CHANNEL_ID,
+            "Assunzione",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+        channel.description = AssunzioneNotificationHelper.ASSUNZIONE_CHANNEL_DESCRIPTION
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 }

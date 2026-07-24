@@ -5,17 +5,25 @@ import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -25,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -44,10 +53,9 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
@@ -75,9 +83,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -110,28 +125,8 @@ private const val DURATA_CHECK_MS = 600L
 private const val DURATA_COLLASSO_MS = 300
 
 /*
-TODO: aggiungere pulsate "ho assunto il medicinale all'orario corretto ma mi sono dimenticato
-    di confermarlo sull'app" per i medicinali segnati come "in ritardo".
- */
-
-/*
-TODO: Quando elimino definitivamente un medicinale, deve rimanere comunque lo storico nel calendario
-    quindi mi sa che dobbiamo fare una eliminazione fake con un flag "eliminato" sul database.
- */
-/*
-TODO: Tutta la sezione di modifiche non funziona
- */
-/*
-TODO: Il FAB a volte smette di ricevere il click
- */
-
-/*
 TODO: nella schermata "Medicinali" non si capisce che premendo una volta sola su un medicinale
   si apre la schermata per editarlo
- */
-
-/*
-TODO: implementare datastore
  */
 
 @Composable
@@ -169,7 +164,8 @@ fun HomeScreen(
         factory = HomeViewModelFactory(
             medicinaleRepository = app.medicinaleRepository,
             assunzioneRepository = app.assunzioneRepository,
-            utenteRepository = app.utenteRepository
+            utenteRepository = app.utenteRepository,
+            promemoriaRepository = app.promemoriaRepository
         )
     )
 
@@ -194,6 +190,7 @@ fun HomeScreen(
         modifier = modifier,
         uiState = uiState,
         onAssumiClick = homeViewModel::onAssumiClick,
+        onAssumiPuntualeClick = homeViewModel::onAssumiPuntualeClick,
         onAnnullaClick = homeViewModel::onAnnullaClick,
         onAddMedicineButtonClick = onAddMedicineButtonClick,
         onUserSettingsButtonClick = onUserSettingsButtonClick,
@@ -248,7 +245,8 @@ fun Home(
     modifier: Modifier = Modifier,
     uiState: HomeUiState,
     onAssumiClick: (AssunzionePrevista) -> Unit,
-    onAnnullaClick: (AssunzionePrevista) -> Unit,
+    onAssumiPuntualeClick: (AssunzionePrevista) -> Unit,
+    onAnnullaClick: (AssunzioneGiornaliera) -> Unit,
     onAddMedicineButtonClick: () -> Unit,
     onUserSettingsButtonClick: () -> Unit,
     onFrequenzaButtonClick: () -> Unit,
@@ -259,9 +257,15 @@ fun Home(
 
     // Punto unico di registrazione: registra l'assunzione e mostra lo
     // Snackbar con l'azione di annullamento. Tutte le card passano da qui.
-    val confermaAssunzione: (AssunzioneGiornaliera) -> Unit = { assunzione ->
-        // Questa funzione è fuori dalla coroutine, quindi viene eseguita sul main thread immediatamente
-        onAssumiClick(assunzione.assunzionePrevista)
+    // Parametrizzato dalla funzione di registrazione così sia la conferma
+    // "normale" (adesso) sia quella "puntuale" (orario previsto) condividono
+    // la stessa logica di Snackbar/annullamento.
+    fun confermaEMostraSnackbar(
+        assunzione: AssunzioneGiornaliera,
+        registra: (AssunzionePrevista) -> Unit
+    ) {
+        // Questa chiamata è fuori dalla coroutine, quindi viene eseguita sul main thread immediatamente
+        registra(assunzione.assunzionePrevista)
         scope.launch {
             // showSnackBar è una suspend function, quindi in certi punti sospenderà la coroutine
             // ma lascerà comunque il thread libero di fare altro, non sta di fatto bloccando il thread
@@ -271,10 +275,13 @@ fun Home(
                 duration = SnackbarDuration.Short
             )
             if (risultato == SnackbarResult.ActionPerformed) {
-                onAnnullaClick(assunzione.assunzionePrevista)
+                onAnnullaClick(assunzione)
             }
         }
     }
+
+    val confermaAssunzione: (AssunzioneGiornaliera) -> Unit = { confermaEMostraSnackbar(it, onAssumiClick) }
+    val confermaAssunzionePuntuale: (AssunzioneGiornaliera) -> Unit = { confermaEMostraSnackbar(it, onAssumiPuntualeClick) }
 
     Column(
         modifier = modifier
@@ -307,10 +314,13 @@ fun Home(
                     assunteOggi = uiState.assunteOggi,
                     totaliOggi = uiState.totaliOggi,
                     onConferma = confermaAssunzione,
+                    onConfermaPuntuale = confermaAssunzionePuntuale,
                     onAggiungiClick = onAddMedicineButtonClick,
                     medicinaleExist = uiState.esisteAlmenoUnMedicinale,
                     soloAssunzioniInRitardoRimaste = uiState.prossimaAssunzione == null && uiState.prossimaInRitardo != null,
-                    prossimaInRitardo = uiState.prossimaInRitardo
+                    prossimaInRitardo = uiState.prossimaInRitardo,
+                    minutiAllaProssima = uiState.minutiAllaProssima,
+                    minutiRitardo = uiState.minutiRitardo
                 )
             }
 
@@ -324,7 +334,7 @@ fun Home(
                     )
                 }
                 items(uiState.inRitardo, key = { it.assunzionePrevista.id }) { assunzione ->
-                    AssunzioneRitardataCard(assunzione, confermaAssunzione)
+                    AssunzioneRitardataCard(assunzione, confermaAssunzione, confermaAssunzionePuntuale)
                 }
             }
 
@@ -350,13 +360,17 @@ fun Home(
  */
 @Composable
 fun IntestazioneHome(
-    onUserSettingsButtonClick: () -> Unit
+    onUserSettingsButtonClick: () -> Unit,
+    nomeUtente: String? = null
 ) {
     val oggi = remember { LocalDate.now() }
     val ora = remember { LocalTime.now() }
     val formatterData = remember { DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN) }
     val dataFormattata = remember(oggi) {
         oggi.format(formatterData).replaceFirstChar { it.uppercase() }
+    }
+    val testoSaluto = remember(ora, nomeUtente) {
+        if (!nomeUtente.isNullOrBlank()) "${saluto(ora)}, $nomeUtente" else saluto(ora)
     }
 
     Row(
@@ -371,7 +385,7 @@ fun IntestazioneHome(
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
-                text = saluto(ora),
+                text = testoSaluto,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -406,6 +420,17 @@ private fun saluto(ora: LocalTime): String = when (ora.hour) {
     in 5..11 -> "Buongiorno"
     in 12..17 -> "Buon pomeriggio"
     else -> "Buonasera"
+}
+
+private fun formattaDurata(minuti: Long): String {
+    val m = minuti.coerceAtLeast(0)
+    val ore = m / 60
+    val min = m % 60
+    return when {
+        ore == 0L -> "$min min"
+        min == 0L -> "${ore}h"
+        else -> "${ore}h ${min}min"
+    }
 }
 
 /**
@@ -549,11 +574,24 @@ private fun SezioneTitolo(
             modifier = Modifier.size(18.dp)
         )
         Text(
-            text = "$testo ($numero)",
+            text = testo,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = accentColor
         )
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(accentColor.copy(alpha = 0.15f))
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "$numero",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accentColor
+            )
+        }
     }
 }
 
@@ -599,20 +637,24 @@ private fun ProssimaAssunzioneCard(
     assunteOggi: Int,
     totaliOggi: Int,
     onConferma: (AssunzioneGiornaliera) -> Unit,
+    onConfermaPuntuale: (AssunzioneGiornaliera) -> Unit,
     onAggiungiClick: () -> Unit,
     medicinaleExist: Boolean,
     soloAssunzioniInRitardoRimaste: Boolean,
-    prossimaInRitardo: AssunzioneGiornaliera?
+    prossimaInRitardo: AssunzioneGiornaliera?,
+    minutiAllaProssima: Long?,
+    minutiRitardo: Long?
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    var showDialogPuntuale by remember { mutableStateOf(false) }
     var isConfirming by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    fun eseguiConferma(assunzione: AssunzioneGiornaliera) {
+    fun eseguiConferma(assunzione: AssunzioneGiornaliera, registra: (AssunzioneGiornaliera) -> Unit) {
         isConfirming = true
         scope.launch {
             delay(DURATA_CHECK_MS.milliseconds)
-            onConferma(assunzione)
+            registra(assunzione)
             delay(200.milliseconds)
             isConfirming = false
         }
@@ -621,15 +663,30 @@ private fun ProssimaAssunzioneCard(
     val tuttoCompletato = prossima == null && totaliOggi > 0 && assunteOggi == totaliOggi
     val nessunaAssunzioneOggi = totaliOggi == 0
 
-    val containerColor by animateColorAsState(
+    val colorePrimarioCard by animateColorAsState(
         targetValue = when {
             prossima != null -> MaterialTheme.colorScheme.primaryContainer
             soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.errorContainer
             tuttoCompletato -> MaterialTheme.colorScheme.secondaryContainer
             else -> MaterialTheme.colorScheme.surfaceVariant
         },
-        label = "container_color"
+        label = "colore_primario_card"
     )
+    val coloreAccentoCard by animateColorAsState(
+        targetValue = when {
+            prossima != null -> MaterialTheme.colorScheme.tertiaryContainer
+            soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.error
+            tuttoCompletato -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        label = "colore_accento_card"
+    )
+    val fattoreMiscelaAccento = when {
+        prossima != null -> 0.55f
+        soloAssunzioniInRitardoRimaste -> 0.22f
+        tuttoCompletato -> 0.22f
+        else -> 0.55f
+    }
     val contentColor = when {
         prossima != null -> MaterialTheme.colorScheme.onPrimaryContainer
         soloAssunzioniInRitardoRimaste -> MaterialTheme.colorScheme.onErrorContainer
@@ -643,15 +700,40 @@ private fun ProssimaAssunzioneCard(
             .shadow(
                 elevation = if (prossima != null || soloAssunzioniInRitardoRimaste) 6.dp else 0.dp,
                 shape = RoundedCornerShape(28.dp),
-                spotColor = containerColor
+                spotColor = colorePrimarioCard
             ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = containerColor,
+            containerColor = Color.Transparent,
             contentColor = contentColor
         ),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
+      Box(
+          modifier = Modifier
+              .background(
+                  Brush.linearGradient(
+                      listOf(colorePrimarioCard, lerp(colorePrimarioCard, coloreAccentoCard, fattoreMiscelaAccento))
+                  )
+              )
+              .border(
+                  width = 1.dp,
+                  brush = Brush.verticalGradient(listOf(contentColor.copy(alpha = 0.25f), Color.Transparent)),
+                  shape = RoundedCornerShape(28.dp)
+              )
+      ) {
+        Box(
+            modifier = Modifier
+                .size(140.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 40.dp, y = (-40).dp)
+                .blur(radius = 40.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+                .background(
+                    Brush.radialGradient(listOf(coloreAccentoCard.copy(alpha = 0.15f), Color.Transparent)),
+                    shape = CircleShape
+                )
+        )
+
         AnimatedContent(
             targetState = when {
                 prossima != null -> "prossima"
@@ -674,111 +756,211 @@ private fun ProssimaAssunzioneCard(
             ) {
                 when (stato) {
                     "prossima" -> if (prossima != null) {
-                        IconaPillolaCerchiata(
-                            background = MaterialTheme.colorScheme.primary,
-                            icona = Icons.Rounded.AccountCircle
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        EtichettaStato(
-                            testo = "PROSSIMA ASSUNZIONE",
-                            color = contentColor.copy(alpha = 0.7f)
-                        )
-                        Text(
-                            text = prossima.nomeMedicinale,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-
-                        InfoChipsRow(
-                            dosaggio = prossima.dosaggio,
-                            orario = prossima.assunzionePrevista.orarioPrevisto,
-                            contentColor = contentColor
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
-                            if (inCorso) {
-                                CheckmarkConfermato()
-                            } else {
-                                Button(
-                                    shape = RoundedCornerShape(50),
-                                    modifier = Modifier.heightIn(min = 48.dp),
-                                    onClick = {
-                                        if (puoAssumereOra) {
-                                            eseguiConferma(prossima)
-                                        } else {
-                                            showDialog = true
-                                        }
-                                    }
+                        Column(Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = if (puoAssumereOra) Icons.Rounded.Check else Icons.Rounded.Call,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
+                                    IconaPillolaCerchiata(
+                                        background = MaterialTheme.colorScheme.primary,
+                                        icona = Icons.Rounded.AccountCircle,
+                                        dimensione = 40.dp
                                     )
-                                    Spacer(Modifier.width(8.dp))
+                                    EtichettaStato(
+                                        testo = "PROSSIMA ASSUNZIONE",
+                                        color = contentColor.copy(alpha = 0.7f)
+                                    )
+                                }
+                                ChipCountdown(
+                                    testo = if (puoAssumereOra) "Ora" else "tra ${formattaDurata(minutiAllaProssima ?: 0)}",
+                                    evidenziato = puoAssumereOra,
+                                    contentColor = contentColor
+                                )
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+
+                            Text(
+                                text = prossima.nomeMedicinale,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                if (!prossima.dosaggio.isNullOrBlank()) {
                                     Text(
-                                        text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
-                                        fontWeight = FontWeight.Bold
+                                        text = prossima.dosaggio,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = contentColor.copy(alpha = 0.75f)
                                     )
+                                }
+                                Text(
+                                    text = prossima.assunzionePrevista.orarioPrevisto.format(
+                                        DateTimeFormatter.ofPattern("HH:mm")
+                                    ),
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+
+                            AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                                if (inCorso) {
+                                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        CheckmarkConfermato()
+                                    }
+                                } else {
+                                    Box(Modifier.fillMaxWidth()) {
+                                        Button(
+                                            shape = RoundedCornerShape(50),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .heightIn(min = 48.dp),
+                                            colors = ButtonColors(
+                                                containerColor = contentColor,
+                                                contentColor = colorePrimarioCard,
+                                                disabledContainerColor = contentColor,
+                                                disabledContentColor = colorePrimarioCard
+                                            ),
+                                            onClick = {
+                                                if (puoAssumereOra) {
+                                                    eseguiConferma(prossima, onConferma)
+                                                } else {
+                                                    showDialog = true
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = if (puoAssumereOra) Icons.Rounded.Check else Icons.Rounded.Star,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        EffettoShimmerPulsante(colore = colorePrimarioCard)
+                                    }
                                 }
                             }
                         }
                     }
 
                     "ritardo" -> if (prossimaInRitardo != null) {
-                        IconaPillolaCerchiata(
-                            background = MaterialTheme.colorScheme.error,
-                            icona = Icons.Rounded.Warning
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        EtichettaStato(
-                            testo = "IN RITARDO",
-                            color = contentColor.copy(alpha = 0.85f)
-                        )
-                        Text(
-                            text = prossimaInRitardo.nomeMedicinale,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-
-                        InfoChipsRow(
-                            dosaggio = prossimaInRitardo.dosaggio,
-                            orario = prossimaInRitardo.assunzionePrevista.orarioPrevisto,
-                            contentColor = contentColor,
-                            orarioLabel = "prevista per le"
-                        )
-
-                        Spacer(Modifier.height(16.dp))
-
-                        AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
-                            if (inCorso) {
-                                CheckmarkConfermato()
-                            } else {
-                                Button(
-                                    shape = RoundedCornerShape(50),
-                                    modifier = Modifier.heightIn(min = 48.dp),
-                                    onClick = { eseguiConferma(prossimaInRitardo) },
-                                    colors = ButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.error,
-                                        contentColor = MaterialTheme.colorScheme.onError,
-                                        disabledContainerColor = MaterialTheme.colorScheme.error,
-                                        disabledContentColor = MaterialTheme.colorScheme.onError
-                                    )
+                        Column(Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Check,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
+                                    IconaPillolaCerchiata(
+                                        background = MaterialTheme.colorScheme.error,
+                                        icona = Icons.Rounded.Warning,
+                                        dimensione = 32.dp
                                     )
-                                    Spacer(Modifier.width(8.dp))
+                                    EtichettaStato(
+                                        testo = "IN RITARDO",
+                                        color = contentColor.copy(alpha = 0.85f)
+                                    )
+                                }
+                                ChipCountdown(
+                                    testo = "in ritardo da ${formattaDurata(minutiRitardo ?: 0)}",
+                                    evidenziato = true,
+                                    contentColor = contentColor
+                                )
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+
+                            Text(
+                                text = prossimaInRitardo.nomeMedicinale,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                if (!prossimaInRitardo.dosaggio.isNullOrBlank()) {
                                     Text(
-                                        text = "Assumi in ritardo",
-                                        fontWeight = FontWeight.Bold
+                                        text = prossimaInRitardo.dosaggio,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = contentColor.copy(alpha = 0.75f)
                                     )
+                                }
+                                Text(
+                                    text = prossimaInRitardo.assunzionePrevista.orarioPrevisto.format(
+                                        DateTimeFormatter.ofPattern("HH:mm")
+                                    ),
+                                    style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(Modifier.height(20.dp))
+
+                            AnimatedContent(targetState = isConfirming, label = "pulsante_assumi") { inCorso ->
+                                if (inCorso) {
+                                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        CheckmarkConfermato()
+                                    }
+                                } else {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TextButton(onClick = { showDialogPuntuale = true }) {
+                                            Text("Presa puntualmente")
+                                        }
+                                        Box {
+                                            Button(
+                                                shape = RoundedCornerShape(50),
+                                                modifier = Modifier.heightIn(min = 48.dp),
+                                                onClick = { eseguiConferma(prossimaInRitardo, onConferma) },
+                                                colors = ButtonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                    contentColor = MaterialTheme.colorScheme.onError,
+                                                    disabledContainerColor = MaterialTheme.colorScheme.error,
+                                                    disabledContentColor = MaterialTheme.colorScheme.onError
+                                                )
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Assumi in ritardo",
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            EffettoShimmerPulsante(colore = MaterialTheme.colorScheme.onError)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -828,6 +1010,7 @@ private fun ProssimaAssunzioneCard(
                 }
             }
         }
+      }
     }
 
     if (showDialog && prossima != null) {
@@ -835,29 +1018,140 @@ private fun ProssimaAssunzioneCard(
             nomeMedicinale = prossima.nomeMedicinale,
             onConferma = {
                 showDialog = false
-                eseguiConferma(prossima)
+                eseguiConferma(prossima, onConferma)
             },
             onAnnulla = { showDialog = false }
+        )
+    }
+
+    if (showDialogPuntuale && prossimaInRitardo != null) {
+        ConfermaPresaPuntualeDialog(
+            nomeMedicinale = prossimaInRitardo.nomeMedicinale,
+            orarioPrevisto = prossimaInRitardo.assunzionePrevista.orarioPrevisto,
+            onConferma = {
+                showDialogPuntuale = false
+                eseguiConferma(prossimaInRitardo, onConfermaPuntuale)
+            },
+            onAnnulla = { showDialogPuntuale = false }
         )
     }
 }
 
 @Composable
-private fun IconaPillolaCerchiata(background: Color, icona: ImageVector) {
+private fun IconaPillolaCerchiata(
+    background: Color,
+    icona: ImageVector,
+    pulsante: Boolean = false,
+    dimensione: Dp = 56.dp
+) {
+    val transizione = rememberInfiniteTransition(label = "badge_animato")
+
+    val scalaRespiro by transizione.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scala_respiro"
+    )
+
+    val progressoAnello by transizione.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "progresso_anello"
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        if (pulsante) {
+            Box(
+                modifier = Modifier
+                    .size(dimensione)
+                    .scale(1f + progressoAnello * 0.5f)
+                    .clip(CircleShape)
+                    .background(background.copy(alpha = (1f - progressoAnello) * 0.5f))
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(dimensione)
+                .scale(scalaRespiro)
+                .clip(CircleShape)
+                .background(background.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                modifier = Modifier.padding(5.dp).size(26.dp),
+                painter = painterResource(R.drawable.pill),
+                contentDescription = null,
+                contentScale = ContentScale.Fit
+            )
+        }
+    }
+}
+
+/**
+ * Badge circolare statico (nessuna animazione), usato nelle card di lista
+ * ("in ritardo"/"prossime assunzioni") per dare un accento colorato senza
+ * competere con il badge animato della hero card.
+ */
+@Composable
+private fun BadgeIconaLista(
+    background: Color,
+    dimensione: Dp = 40.dp,
+    contenuto: @Composable BoxScope.() -> Unit
+) {
     Box(
         modifier = Modifier
-            .size(56.dp)
+            .size(dimensione)
             .clip(CircleShape)
             .background(background.copy(alpha = 0.15f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icona,
-            contentDescription = null,
-            tint = background,
-            modifier = Modifier.size(28.dp)
-        )
-    }
+        contentAlignment = Alignment.Center,
+        content = contenuto
+    )
+}
+
+/**
+ * Fascia di luce che attraversa in loop il pulsante sovrastante, per
+ * segnalare che è pronto per essere premuto. Si clippa da sola alla stessa
+ * forma a pillola del `Button`, indipendentemente dai suoi modifier interni.
+ */
+@Composable
+private fun BoxScope.EffettoShimmerPulsante(colore: Color) {
+    val transizione = rememberInfiniteTransition(label = "shimmer_pulsante")
+    val avanzamento by transizione.animateFloat(
+        initialValue = -0.4f,
+        targetValue = 1.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "avanzamento_shimmer"
+    )
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .clip(RoundedCornerShape(50))
+            .drawWithContent {
+                val centro = avanzamento * size.width
+                val larghezzaFascia = size.width * 0.3f
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            colore.copy(alpha = 0f),
+                            colore.copy(alpha = 0.35f),
+                            colore.copy(alpha = 0f)
+                        ),
+                        start = Offset(centro - larghezzaFascia, 0f),
+                        end = Offset(centro + larghezzaFascia, 0f)
+                    )
+                )
+            }
+    )
 }
 
 @Composable
@@ -871,63 +1165,35 @@ private fun EtichettaStato(testo: String, color: Color) {
     )
 }
 
+/**
+ * Chip del countdown nell'intestazione della hero card: pulsa leggermente
+ * quando `evidenziato` è vero, cioè quando rappresenta un invito ad agire
+ * ("Ora" per la prossima assunzione, sempre per quella in ritardo).
+ */
 @Composable
-private fun InfoChipsRow(
-    dosaggio: String?,
-    orario: java.time.LocalTime,
-    contentColor: Color,
-    orarioLabel: String? = null
-) {
-    Spacer(Modifier.height(10.dp))
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun ChipCountdown(testo: String, evidenziato: Boolean, contentColor: Color) {
+    val transizione = rememberInfiniteTransition(label = "chip_countdown")
+    val scala by transizione.animateFloat(
+        initialValue = 1f,
+        targetValue = if (evidenziato) 1.06f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scala_chip"
+    )
+    Box(
+        modifier = Modifier
+            .scale(scala)
+            .clip(RoundedCornerShape(50))
+            .background(contentColor.copy(alpha = if (evidenziato) 0.22f else 0.12f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        if (!dosaggio.isNullOrBlank()) {
-            AssistChip(
-                onClick = {},
-                enabled = false,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.AccountCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                },
-                label = { Text(dosaggio, style = MaterialTheme.typography.labelMedium) },
-                colors = AssistChipDefaults.assistChipColors(
-                    disabledLabelColor = contentColor,
-                    disabledLeadingIconContentColor = contentColor,
-                    disabledContainerColor = contentColor.copy(alpha = 0.1f)
-                ),
-                border = null
-            )
-        }
-        AssistChip(
-            onClick = {},
-            enabled = false,
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Rounded.Call,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-            },
-            label = {
-                Text(
-                    text = buildString {
-                        orarioLabel?.let { append("$it ") }
-                        append(orario.format(DateTimeFormatter.ofPattern("HH:mm")))
-                    },
-                    style = MaterialTheme.typography.labelMedium
-                )
-            },
-            colors = AssistChipDefaults.assistChipColors(
-                disabledLabelColor = contentColor,
-                disabledLeadingIconContentColor = contentColor,
-                disabledContainerColor = contentColor.copy(alpha = 0.1f)
-            ),
-            border = null
+        Text(
+            text = testo,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = contentColor
         )
     }
 }
@@ -970,16 +1236,44 @@ private fun ConfermaAnticipoDialog(
     )
 }
 
+@Composable
+private fun ConfermaPresaPuntualeDialog(
+    nomeMedicinale: String,
+    orarioPrevisto: LocalTime,
+    onConferma: () -> Unit,
+    onAnnulla: () -> Unit
+) {
+    val orarioFormattato = remember(orarioPrevisto) {
+        orarioPrevisto.format(DateTimeFormatter.ofPattern("HH:mm"))
+    }
+    AlertDialog(
+        onDismissRequest = onAnnulla,
+        title = { Text("Confermare l'assunzione puntuale?") },
+        text = {
+            Text("$nomeMedicinale verrà segnata come assunta alle $orarioFormattato, l'orario previsto, invece che ora.")
+        },
+        confirmButton = {
+            TextButton(onClick = onConferma) { Text("Conferma") }
+        },
+        dismissButton = {
+            TextButton(onClick = onAnnulla) { Text("Annulla") }
+        }
+    )
+}
+
 /**
  * Sequenza condivisa da "in ritardo" e "prossime assunzioni":
- * checkmark -> collasso della card -> solo allora `onConferma` reale.
+ * checkmark -> collasso della card -> solo allora l'`onConferma` reale.
  * La card resta composta (stessa `key` nella LazyColumn) finché l'uscita
  * non è finita, quindi la rimozione dalla lista vera non causa scatti.
+ * `onConferma` è passato ad `avviaConferma` invece che fisso, così più
+ * pulsanti della stessa card possono condividere l'animazione pur portando
+ * ciascuno a un'azione finale diversa (es. "Assumi in ritardo" vs "Presa
+ * puntualmente").
  */
 @Composable
 private fun CardConAnimazioneAssunzione(
-    onConferma: () -> Unit,
-    content: @Composable (isConfirming: Boolean, avviaConferma: () -> Unit) -> Unit
+    content: @Composable (isConfirming: Boolean, avviaConferma: (onConferma: () -> Unit) -> Unit) -> Unit
 ) {
     var isConfirming by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(true) }
@@ -990,7 +1284,7 @@ private fun CardConAnimazioneAssunzione(
         exit = shrinkVertically(animationSpec = tween(DURATA_COLLASSO_MS)) +
                 fadeOut(animationSpec = tween(DURATA_COLLASSO_MS / 2))
     ) {
-        content(isConfirming) {
+        content(isConfirming) { onConferma ->
             // Protegge da doppio tap: se l'animazione è già partita, ignora
             // ulteriori richieste di conferma finché non si conclude.
             if (!isConfirming) {
@@ -1009,11 +1303,20 @@ private fun CardConAnimazioneAssunzione(
 @Composable
 private fun AssunzioneRitardataCard(
     assunzione: AssunzioneGiornaliera,
-    onConferma: (AssunzioneGiornaliera) -> Unit
+    onConfermaRitardo: (AssunzioneGiornaliera) -> Unit,
+    onConfermaPuntuale: (AssunzioneGiornaliera) -> Unit
 ) {
-    CardConAnimazioneAssunzione(onConferma = { onConferma(assunzione) }) { isConfirming, avviaConferma ->
+    var mostraDialogPuntuale by remember { mutableStateOf(false) }
+
+    CardConAnimazioneAssunzione { isConfirming, avviaConferma ->
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    spotColor = MaterialTheme.colorScheme.errorContainer
+                ),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -1021,22 +1324,19 @@ private fun AssunzioneRitardataCard(
             ),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp)
-                    )
+                    BadgeIconaLista(background = MaterialTheme.colorScheme.error) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                     Column {
                         Text(
                             text = assunzione.nomeMedicinale,
@@ -1053,18 +1353,44 @@ private fun AssunzioneRitardataCard(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
                 AnimatedContent(targetState = isConfirming, label = "assumi_in_ritardo") { inCorso ->
                     if (inCorso) {
-                        CheckmarkConfermato()
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                            CheckmarkConfermato()
+                        }
                     } else {
-                        // Niente dialog qui: la medicina è già saltata, la conferma
-                        // dell'orario è già passata, non serve chiedere ulteriore conferma.
-                        OutlinedButton(onClick = avviaConferma, shape = RoundedCornerShape(50)) {
-                            Text("Assumi in ritardo")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                        ) {
+                            TextButton(onClick = { mostraDialogPuntuale = true }) {
+                                Text("Presa puntualmente")
+                            }
+                            // Niente dialog qui: la medicina è già saltata, la conferma
+                            // dell'orario è già passata, non serve chiedere ulteriore conferma.
+                            OutlinedButton(
+                                onClick = { avviaConferma { onConfermaRitardo(assunzione) } },
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text("Assumi in ritardo")
+                            }
                         }
                     }
                 }
             }
+        }
+
+        if (mostraDialogPuntuale) {
+            ConfermaPresaPuntualeDialog(
+                nomeMedicinale = assunzione.nomeMedicinale,
+                orarioPrevisto = assunzione.assunzionePrevista.orarioPrevisto,
+                onConferma = {
+                    mostraDialogPuntuale = false
+                    avviaConferma { onConfermaPuntuale(assunzione) }
+                },
+                onAnnulla = { mostraDialogPuntuale = false }
+            )
         }
     }
 }
@@ -1076,15 +1402,20 @@ private fun ProssimaInCodaCard(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
-    CardConAnimazioneAssunzione(onConferma = { onConferma(assunzione) }) { isConfirming, avviaConferma ->
+    CardConAnimazioneAssunzione { isConfirming, avviaConferma ->
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 3.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    spotColor = MaterialTheme.colorScheme.secondaryContainer
+                ),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
             Row(
@@ -1098,19 +1429,12 @@ private fun ProssimaInCodaCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = assunzione.assunzionePrevista.orarioPrevisto.format(
-                                DateTimeFormatter.ofPattern("HH:mm")
-                            ),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                    BadgeIconaLista(background = MaterialTheme.colorScheme.primary) {
+                        Image(
+                            modifier = Modifier.size(22.dp),
+                            painter = painterResource(R.drawable.pill),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit
                         )
                     }
                     Column {
@@ -1119,12 +1443,17 @@ private fun ProssimaInCodaCard(
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
-                        if (!assunzione.dosaggio.isNullOrBlank()) {
-                            Text(
-                                text = assunzione.dosaggio,
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                        }
+                        Text(
+                            text = buildString {
+                                if (!assunzione.dosaggio.isNullOrBlank()) append("${assunzione.dosaggio} · ")
+                                append(
+                                    assunzione.assunzionePrevista.orarioPrevisto.format(
+                                        DateTimeFormatter.ofPattern("HH:mm")
+                                    )
+                                )
+                            },
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 }
                 AnimatedContent(targetState = isConfirming, label = "assumi_in_anticipo") { inCorso ->
@@ -1144,7 +1473,7 @@ private fun ProssimaInCodaCard(
                 nomeMedicinale = assunzione.nomeMedicinale,
                 onConferma = {
                     showDialog = false
-                    avviaConferma()
+                    avviaConferma { onConferma(assunzione) }
                 },
                 onAnnulla = { showDialog = false }
             )
@@ -1194,6 +1523,7 @@ fun HomeScreenPreview() {
                     isLoading = false
                 ),
                 onAssumiClick = {},
+                onAssumiPuntualeClick = {},
                 onAnnullaClick = {},
                 onAddMedicineButtonClick = {},
                 onUserSettingsButtonClick = {},
@@ -1227,6 +1557,7 @@ fun HomeScreenInRitardoPreview() {
                         isLoading = false
                     ),
                     onAssumiClick = {},
+                onAssumiPuntualeClick = {},
                     onAnnullaClick = {},
                     onAddMedicineButtonClick = {},
                     onUserSettingsButtonClick = {},
@@ -1246,6 +1577,7 @@ fun HomeScreenVuotaPreview() {
             Home(
                 uiState = HomeUiState(isLoading = false),
                 onAssumiClick = {},
+                onAssumiPuntualeClick = {},
                 onAnnullaClick = {},
                 onAddMedicineButtonClick = {},
                 onUserSettingsButtonClick = {},
@@ -1264,6 +1596,7 @@ fun HomeScreenConMedicinaleNonAttivoPreview() {
             Home(
                 uiState = HomeUiState(isLoading = false, esisteAlmenoUnMedicinale = true),
                 onAssumiClick = {},
+                onAssumiPuntualeClick = {},
                 onAnnullaClick = {},
                 onAddMedicineButtonClick = {},
                 onUserSettingsButtonClick = {},
@@ -1286,6 +1619,7 @@ fun HomeScreenCompletataPreview() {
                     isLoading = false
                 ),
                 onAssumiClick = {},
+                onAssumiPuntualeClick = {},
                 onAnnullaClick = {},
                 onAddMedicineButtonClick = {},
                 onUserSettingsButtonClick = {},

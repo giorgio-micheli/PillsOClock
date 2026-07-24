@@ -50,6 +50,8 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.nav3recipes.bottomsheet.BottomSheetSceneStrategy
+import com.google.firebase.Firebase
+import com.google.firebase.analytics.analytics
 import micheli.giorgio.pillsoclock.LocalSnackbarHostState
 import micheli.giorgio.pillsoclock.ui.addMedicine.AddMedicinale
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaGiornoScreen
@@ -57,6 +59,7 @@ import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaScreen
 import micheli.giorgio.pillsoclock.ui.home.HomeScreen
 import micheli.giorgio.pillsoclock.ui.home.IntestazioneHome
 import micheli.giorgio.pillsoclock.ui.medicinali.MedicinaliScreen
+import micheli.giorgio.pillsoclock.ui.settings.AccountScreen
 import micheli.giorgio.pillsoclock.ui.settings.SettingsScreen
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -79,7 +82,7 @@ Un NavEntry è un oggetto che contiene sia la key, sia il Composable da mostrare
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavigationRoot() {
+fun NavigationRoot(nomeUtente: String? = null) {
     // Backstack di Navigation3 gestito completamente dal developer
     // Viene implementato come una lista osservabile da Compose che contiene delle keys.
     val backStack = remember { mutableStateListOf<Any>(Routes.Home) }
@@ -109,7 +112,8 @@ fun NavigationRoot() {
                 route = backStack.lastOrNull(),
                 onBack = { backStack.removeFromBackstack() },
                 onNavigateToSettings = { backStack.addToBackstack(Routes.Settings) },
-                onAddMedicinale = { backStack.addToBackstack(Routes.AddMedicine())}
+                onAddMedicinale = { backStack.addToBackstack(Routes.AddMedicine())},
+                nomeUtente = nomeUtente
             )
         },
         floatingActionButton = {
@@ -175,15 +179,19 @@ fun NavigationRoot() {
                         HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             onAddMedicineButtonClick = {
+                                Firebase.analytics.logEvent("add_medicinale_click", null)
                                 backStack.addToBackstack(Routes.AddMedicine())
                             },
                             onUserSettingsButtonClick = {
+                                Firebase.analytics.logEvent("settings_click", null)
                                 backStack.addToBackstack(Routes.Settings)
                             },
                             onFrequenzaButtonClick = {
+                                Firebase.analytics.logEvent("frequenza_click", null)
                                 backStack.addToBackstack(Routes.Frequenza)
                             },
                             onMedicinaliButtonClick = {
+                                Firebase.analytics.logEvent("lista_medicinali_click", null)
                                 backStack.addToBackstack(Routes.Medicinali)
                             }
                         )
@@ -215,12 +223,7 @@ fun NavigationRoot() {
                         )
                     }
                     is Routes.SettingsRoutes.Account -> NavEntry(key) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Account screen")
-                        }
+                        AccountScreen()
                     }
                     is Routes.Frequenza -> NavEntry(key) {
                         FrequenzaScreen(
@@ -270,7 +273,8 @@ fun SelectTopBar(
     route: Any?,
     onBack: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onAddMedicinale: () -> Unit
+    onAddMedicinale: () -> Unit,
+    nomeUtente: String? = null
 ) {
 
     AnimatedContent(
@@ -282,7 +286,7 @@ fun SelectTopBar(
     ) { currentRoute ->
 
         when (currentRoute) {
-            is Routes.Home -> IntestazioneHome(onNavigateToSettings)
+            is Routes.Home -> IntestazioneHome(onNavigateToSettings, nomeUtente)
             is Routes.AddMedicine, is Routes.Settings, is Routes.SettingsRoutes.Account, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
 
                 val title = when (currentRoute) {

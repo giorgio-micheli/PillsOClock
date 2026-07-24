@@ -82,12 +82,16 @@ class AssunzioneRepositoryImpl (
     // --- azione utente ---
 
     @Transaction
-    override suspend fun registraAssunzione(assunzionePrevista: AssunzionePrevista, idUtente: Int) {
+    override suspend fun registraAssunzione(
+        assunzionePrevista: AssunzionePrevista,
+        idUtente: Int,
+        timestamp: LocalDateTime
+    ) {
         assunzioneEffettuataDao.insert(
             AssunzioneEffettuataEntity(
                 idAssunzionePrevista = assunzionePrevista.id,
                 idUtente = idUtente,
-                timestampAssunzione = LocalDateTime.now()
+                timestampAssunzione = timestamp
             )
         )
         assunzionePrevistaDao.aggiornaStato(assunzionePrevista.id, "ASSUNTA")
@@ -105,4 +109,7 @@ class AssunzioneRepositoryImpl (
 
     override suspend fun segnaVecchieComeSaltate(idUtente: Int) =
         assunzionePrevistaDao.segnaVecchieComeSaltate(idUtente, LocalDate.now())
+
+    override suspend fun getAssunzioniPrevisteInAttesaOggiPerPiano(idPiano: Int, data: LocalDate): List<AssunzionePrevista> =
+        assunzionePrevistaDao.getAssunzioniInAttesaOggiPerPiano(idPiano, data).map { it.toDomain() }
 }

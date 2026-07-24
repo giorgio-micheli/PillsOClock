@@ -15,8 +15,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import micheli.giorgio.pillsoclock.domain.model.Medicinale
 import micheli.giorgio.pillsoclock.domain.model.MedicinaleConPianoEOrari
+import micheli.giorgio.pillsoclock.domain.repository.AssunzioneRepository
 import micheli.giorgio.pillsoclock.domain.repository.MedicinaleRepository
+import micheli.giorgio.pillsoclock.domain.repository.PromemoriaRepository
 import micheli.giorgio.pillsoclock.domain.repository.UtenteRepository
+import java.time.LocalDate
 
 data class MedicinaliUiState(
     val medicinali: List<MedicinaleConPianoEOrari> = emptyList(),
@@ -26,7 +29,9 @@ data class MedicinaliUiState(
 
 class MedicinaliViewModel(
     private val medicinaleRepository: MedicinaleRepository,
-    private val utenteRepository: UtenteRepository
+    private val utenteRepository: UtenteRepository,
+    private val assunzioneRepository: AssunzioneRepository,
+    private val promemoriaRepository: PromemoriaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MedicinaliUiState())
@@ -65,17 +70,48 @@ class MedicinaliViewModel(
 
     fun onToggleClick(medicinale: Medicinale) {
         viewModelScope.launch(Dispatchers.IO) {
+            val idPiani = uiState.value.medicinali
+                .firstOrNull { it.medicinale.id == medicinale.id }
+                ?.piani?.map { it.piano.id }
+                ?: emptyList()
+            val oggi = LocalDate.now()
+
             if (medicinale.attivo) {
                 medicinaleRepository.disattivaMedicinale(medicinale.id)
+                // Un medicinale appena disattivato non deve continuare a far
+                // scattare un promemoria oggi (non risolve il ricalcolo delle
+                // AssunzionePrevista, bug noto e separato).
+                idPiani.forEach { idPiano ->
+                    assunzioneRepository.getAssunzioniPrevisteInAttesaOggiPerPiano(idPiano, oggi)
+                        .forEach { promemoriaRepository.cancella(it.id) }
+                }
             } else {
                 medicinaleRepository.attivaMedicinale(medicinale.id)
+                // Ripianifica subito i promemoria di oggi ancora in attesa, altrimenti
+                // resterebbero persi fino al prossimo ricalcolo di mezzanotte.
+                idPiani.forEach { idPiano ->
+                    assunzioneRepository.getAssunzioniPrevisteInAttesaOggiPerPiano(idPiano, oggi)
+                        .forEach {
+                            promemoriaRepository.pianifica(it.id, it.data, it.orarioPrevisto, medicinale.nome, medicinale.dosaggio)
+                        }
+                }
             }
         }
     }
 
     fun onEliminaClick(medicinale: Medicinale) {
         viewModelScope.launch(Dispatchers.IO) {
+            val idPiani = uiState.value.medicinali
+                .firstOrNull { it.medicinale.id == medicinale.id }
+                ?.piani?.map { it.piano.id }
+                ?: emptyList()
+            val oggi = LocalDate.now()
+
             medicinaleRepository.eliminaMedicinale(medicinale.id)
+            idPiani.forEach { idPiano ->
+                assunzioneRepository.getAssunzioniPrevisteInAttesaOggiPerPiano(idPiano, oggi)
+                    .forEach { promemoriaRepository.cancella(it.id) }
+            }
         }
     }
 }

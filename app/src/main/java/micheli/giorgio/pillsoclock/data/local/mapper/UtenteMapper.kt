@@ -6,6 +6,7 @@ import micheli.giorgio.pillsoclock.domain.model.Utente
 fun UtenteEntity.toDomain(): Utente = Utente(
     id = id,
     nome = nome,
+    cognome = cognome,
     email = email,
     dataRegistrazione = dataRegistrazione
 )
@@ -13,6 +14,7 @@ fun UtenteEntity.toDomain(): Utente = Utente(
 fun Utente.toEntity() = UtenteEntity(
     id = id,
     nome = nome,
+    cognome = cognome,
     email = email,
     dataRegistrazione = dataRegistrazione
 )
