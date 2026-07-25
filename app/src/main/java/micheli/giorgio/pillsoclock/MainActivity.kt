@@ -64,6 +64,7 @@ val LocalSnackbarHostState = staticCompositionLocalOf<SnackbarHostState> {
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // SplashScreen api, nessuna animazione custom
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

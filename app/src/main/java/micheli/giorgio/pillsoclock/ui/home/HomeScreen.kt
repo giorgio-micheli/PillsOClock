@@ -280,8 +280,15 @@ fun Home(
         }
     }
 
-    val confermaAssunzione: (AssunzioneGiornaliera) -> Unit = { confermaEMostraSnackbar(it, onAssumiClick) }
-    val confermaAssunzionePuntuale: (AssunzioneGiornaliera) -> Unit = { confermaEMostraSnackbar(it, onAssumiPuntualeClick) }
+    // remember: senza, queste lambda vengono ricreate a ogni ricomposizione di
+    // Home e, passate a ogni item della LazyColumn, ne invaliderebbero la
+    // skippability indipendentemente dal contenuto dei dati.
+    val confermaAssunzione: (AssunzioneGiornaliera) -> Unit = remember(onAssumiClick, onAnnullaClick) {
+        { assunzione -> confermaEMostraSnackbar(assunzione, onAssumiClick) }
+    }
+    val confermaAssunzionePuntuale: (AssunzioneGiornaliera) -> Unit = remember(onAssumiPuntualeClick, onAnnullaClick) {
+        { assunzione -> confermaEMostraSnackbar(assunzione, onAssumiPuntualeClick) }
+    }
 
     Column(
         modifier = modifier
@@ -694,6 +701,21 @@ private fun ProssimaAssunzioneCard(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
+    // remember: senza, questi Brush vengono riallocati a ogni ricomposizione
+    // della card (es. quando cambia solo isConfirming), anche se i colori da
+    // cui dipendono sono rimasti gli stessi.
+    val brushSfondoCard = remember(colorePrimarioCard, coloreAccentoCard, fattoreMiscelaAccento) {
+        Brush.linearGradient(
+            listOf(colorePrimarioCard, lerp(colorePrimarioCard, coloreAccentoCard, fattoreMiscelaAccento))
+        )
+    }
+    val brushBordoCard = remember(contentColor) {
+        Brush.verticalGradient(listOf(contentColor.copy(alpha = 0.25f), Color.Transparent))
+    }
+    val brushBloomCard = remember(coloreAccentoCard) {
+        Brush.radialGradient(listOf(coloreAccentoCard.copy(alpha = 0.15f), Color.Transparent))
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -711,14 +733,10 @@ private fun ProssimaAssunzioneCard(
     ) {
       Box(
           modifier = Modifier
-              .background(
-                  Brush.linearGradient(
-                      listOf(colorePrimarioCard, lerp(colorePrimarioCard, coloreAccentoCard, fattoreMiscelaAccento))
-                  )
-              )
+              .background(brushSfondoCard)
               .border(
                   width = 1.dp,
-                  brush = Brush.verticalGradient(listOf(contentColor.copy(alpha = 0.25f), Color.Transparent)),
+                  brush = brushBordoCard,
                   shape = RoundedCornerShape(28.dp)
               )
       ) {
@@ -729,7 +747,7 @@ private fun ProssimaAssunzioneCard(
                 .offset(x = 40.dp, y = (-40).dp)
                 .blur(radius = 40.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
                 .background(
-                    Brush.radialGradient(listOf(coloreAccentoCard.copy(alpha = 0.15f), Color.Transparent)),
+                    brushBloomCard,
                     shape = CircleShape
                 )
         )

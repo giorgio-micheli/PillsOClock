@@ -83,7 +83,13 @@ class HomeViewModel(
                     emit(HomeUiState(isLoading = false, errorMessage = e.message))
                 }
                 .collect { nuovoStato ->
-                    _uiState.value = nuovoStato
+                    // Il ticker ricalcola lo stato ogni 15s anche quando nulla è
+                    // realmente cambiato (es. tra un boundary di minuto e l'altro):
+                    // evitare di riassegnare un HomeUiState uguale evita di far
+                    // ricomporre inutilmente l'intera LazyColumn della home.
+                    if (_uiState.value != nuovoStato) {
+                        _uiState.value = nuovoStato
+                    }
                 }
         }
     }

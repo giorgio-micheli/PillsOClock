@@ -7,6 +7,10 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+composeCompiler {
+    stabilityConfigurationFiles.add(layout.projectDirectory.file("compose_compiler_config.conf"))
+}
+
 android {
     namespace = "micheli.giorgio.pillsoclock"
     compileSdk {
@@ -41,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

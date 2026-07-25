@@ -1,6 +1,7 @@
 package micheli.giorgio.pillsoclock.ui.settings
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,12 +29,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import micheli.giorgio.pillsoclock.BuildConfig
 import micheli.giorgio.pillsoclock.PillsOClockApp
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 
@@ -138,6 +141,17 @@ fun Settings(
                 color = DividerDefaults.color
                 )
             }
+        }
+
+        item {
+            val label = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.BUILD_TYPE}"
+            Text(
+                text = label,
+                color = Color.White,
+                modifier = Modifier
+                    .background(Color.Red)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
         }
     }
 }

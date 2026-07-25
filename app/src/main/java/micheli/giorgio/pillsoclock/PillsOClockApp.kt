@@ -64,14 +64,16 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 // Estende Application e implementa Configuration.Provider
 class PillsOClockApp : Application(), Configuration.Provider {
 
+    // Istanza del database locale
     val database: AppDatabase by lazy {
         AppDatabase.getInstance(this)
     }
 
+    // Oggetto per lavorare sulla tabella "utenti" del database
     val utenteRepository: UtenteRepository by lazy {
         UtenteRepositoryImpl(database.utentiDao())
     }
-
+    // Oggetto per lavorare sulla tabella "medicinale" del database
     val medicinaleRepository: MedicinaleRepository by lazy {
         MedicinaleRepositoryImpl(
             database.medicinaliDao(),
@@ -108,6 +110,7 @@ class PillsOClockApp : Application(), Configuration.Provider {
             )
             .build()
 
+    // Metodo onCreate che viene eseguito a ogni avvio dell'app
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -116,6 +119,9 @@ class PillsOClockApp : Application(), Configuration.Provider {
         eseguiGenerazioneImmediata()
     }
 
+    /**
+     * Crea un nuovo utente al primo avvio dell'app sul dispositivo
+     */
     private fun inizializzaUtente() {
         CoroutineScope(Dispatchers.IO).launch {
             val utente = database.utentiDao().getUtente().firstOrNull()
@@ -161,7 +167,9 @@ class PillsOClockApp : Application(), Configuration.Provider {
     }
 
     /**
-     * Crea l'unico notification channel per le notifiche di questa app
+     * Crea l'unico notification channel per le notifiche di questa app.
+     * Il channel viene creato solamente al primo avvio dell'app sul dispositivo, agli avvii
+     * successivi non succede niente, il metodo è idempotente
      */
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
