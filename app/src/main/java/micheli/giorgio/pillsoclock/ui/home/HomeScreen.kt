@@ -2,6 +2,7 @@ package micheli.giorgio.pillsoclock.ui.home
 
 import android.annotation.SuppressLint
 import android.util.Log
+import android.widget.Button
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -18,6 +19,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,6 +42,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,6 +61,7 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -76,6 +80,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -135,7 +141,8 @@ fun HomeScreen(
     onAddMedicineButtonClick: () -> Unit,
     onUserSettingsButtonClick: () -> Unit,
     onFrequenzaButtonClick: () -> Unit,
-    onMedicinaliButtonClick: () -> Unit
+    onMedicinaliButtonClick: () -> Unit,
+    onListaInCimaChange: (Boolean) -> Unit = {}
 ) {
 
     val context = LocalContext.current
@@ -195,7 +202,8 @@ fun HomeScreen(
         onAddMedicineButtonClick = onAddMedicineButtonClick,
         onUserSettingsButtonClick = onUserSettingsButtonClick,
         onFrequenzaButtonClick = onFrequenzaButtonClick,
-        onMedicinaliButtonClick = onMedicinaliButtonClick
+        onMedicinaliButtonClick = onMedicinaliButtonClick,
+        onListaInCimaChange = onListaInCimaChange
     )
 }
 
@@ -250,7 +258,8 @@ fun Home(
     onAddMedicineButtonClick: () -> Unit,
     onUserSettingsButtonClick: () -> Unit,
     onFrequenzaButtonClick: () -> Unit,
-    onMedicinaliButtonClick: () -> Unit
+    onMedicinaliButtonClick: () -> Unit,
+    onListaInCimaChange: (Boolean) -> Unit = {}
 ) {
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
@@ -290,6 +299,20 @@ fun Home(
         { assunzione -> confermaEMostraSnackbar(assunzione, onAssumiPuntualeClick) }
     }
 
+    // Stato di scroll della lista, risalito a NavigationRoot per nascondere/mostrare il FAB.
+    // "In cima" è definito in modo stretto: solo il primo item visibile con offset zero,
+    // non un generico cambio di direzione dello scroll.
+    val listStateAssunzioni = rememberLazyListState()
+    val listaInCima by remember {
+        derivedStateOf {
+            listStateAssunzioni.firstVisibleItemIndex == 0 &&
+                listStateAssunzioni.firstVisibleItemScrollOffset == 0
+        }
+    }
+    LaunchedEffect(listaInCima) {
+        onListaInCimaChange(listaInCima)
+    }
+
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
@@ -310,6 +333,7 @@ fun Home(
         )
 
         LazyColumn(
+            state = listStateAssunzioni,
             modifier = Modifier.fillMaxWidth().weight(1f),
             contentPadding = PaddingValues(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -1380,16 +1404,30 @@ private fun AssunzioneRitardataCard(
                     } else {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            TextButton(onClick = { mostraDialogPuntuale = true }) {
+                            TextButton(
+                                colors = ButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                    disabledContainerColor = MaterialTheme.colorScheme.errorContainer,
+                                    disabledContentColor = MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                onClick = { mostraDialogPuntuale = true }
+                            ) {
                                 Text("Presa puntualmente")
                             }
                             // Niente dialog qui: la medicina è già saltata, la conferma
                             // dell'orario è già passata, non serve chiedere ulteriore conferma.
-                            OutlinedButton(
+                            Button(
                                 onClick = { avviaConferma { onConfermaRitardo(assunzione) } },
-                                shape = RoundedCornerShape(50)
+                                shape = RoundedCornerShape(50),
+                                colors = ButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                    contentColor = MaterialTheme.colorScheme.surface,
+                                    disabledContentColor = Color.Gray,
+                                    disabledContainerColor = Color.White
+                                )
                             ) {
                                 Text("Assumi in ritardo")
                             }

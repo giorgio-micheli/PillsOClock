@@ -36,7 +36,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,9 +91,13 @@ fun NavigationRoot(nomeUtente: String? = null) {
     // Necessario per avere il bottom sheet dialog come destinazione di Navigation3
     val sceneStrategies = remember { listOf(BottomSheetSceneStrategy<Any>()) }
 
-    //
+    // Stato risalito dalla HomeScreen tramite onListaInCimaChange: true quando la
+    // LazyColumn della home è esattamente in cima (offset 0). Il FAB è visibile
+    // solo quando siamo nella home E la lista è in cima.
+    var listaInCima by remember { mutableStateOf(true) }
+
     val fabVisible by remember {
-        derivedStateOf { backStack.lastOrNull() is Routes.Home }
+        derivedStateOf { backStack.lastOrNull() is Routes.Home && listaInCima }
     }
     // Riferimento costante a State<Float> reso "float" dalla keyword "by"
 //    val scale by animateFloatAsState(
@@ -193,7 +199,8 @@ fun NavigationRoot(nomeUtente: String? = null) {
                             onMedicinaliButtonClick = {
                                 Firebase.analytics.logEvent("lista_medicinali_click", null)
                                 backStack.addToBackstack(Routes.Medicinali)
-                            }
+                            },
+                            onListaInCimaChange = { inCima -> listaInCima = inCima }
                         )
                     }
                     is Routes.AddMedicine -> NavEntry(
