@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -161,13 +162,9 @@ fun ExactAlarmPermissionHandler() {
     if (!puoPianificareAllarmiEsatti) {
         AlertDialog(
             onDismissRequest = { /* bloccante: non può essere chiuso senza concedere il permesso */ },
-            title = { Text("Permesso allarmi esatti necessario") },
+            title = { Text(stringResource(R.string.alarm_dialog_titolo)) },
             text = {
-                Text(
-                    "Per avvisarti puntualmente quando è ora di prendere una medicina, " +
-                        "PillsOClock ha bisogno del permesso per pianificare allarmi esatti. " +
-                        "Attivalo dalle impostazioni di sistema."
-                )
+                Text(stringResource(R.string.alarm_dialog_testo))
             },
             confirmButton = {
                 Button(onClick = {
@@ -176,7 +173,7 @@ fun ExactAlarmPermissionHandler() {
                     }
                     context.startActivity(intent)
                 }) {
-                    Text("Apri impostazioni")
+                    Text(stringResource(R.string.alarm_dialog_bottone))
                 }
             }
         )

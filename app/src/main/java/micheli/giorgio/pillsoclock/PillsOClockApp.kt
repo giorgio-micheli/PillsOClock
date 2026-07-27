@@ -174,10 +174,10 @@ class PillsOClockApp : Application(), Configuration.Provider {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             AssunzioneNotificationHelper.ASSUNZIONE_CHANNEL_ID,
-            "Assunzione",
+            getString(R.string.notifica_canale_nome),
             NotificationManager.IMPORTANCE_HIGH
         )
-        channel.description = AssunzioneNotificationHelper.ASSUNZIONE_CHANNEL_DESCRIPTION
+        channel.description = AssunzioneNotificationHelper.channelDescription(this)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)

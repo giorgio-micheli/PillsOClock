@@ -1,3 +1,145 @@
 <resources>
     <string name="app_name">PillsOClock</string>
+
+    <!-- Comuni, condivisi tra più schermate -->
+    <string name="common_annulla">Annulla</string>
+    <string name="common_conferma">Conferma</string>
+    <string name="common_assumi_in_anticipo">Assumi in anticipo</string>
+    <string name="common_assumi_in_ritardo">Assumi in ritardo</string>
+    <string name="common_presa_puntualmente">Presa puntualmente</string>
+    <string name="common_rimuovi">Rimuovi</string>
+    <string name="common_indietro">Indietro</string>
+
+    <!-- Home -->
+    <string name="home_snackbar_segnata_come_assunta">%1$s segnata come assunta</string>
+    <string name="home_sezione_in_ritardo">IN RITARDO</string>
+    <string name="home_sezione_prossime_assunzioni">PROSSIME ASSUNZIONI</string>
+    <string name="home_account_content_description">Account</string>
+    <string name="home_saluto_buongiorno">Buongiorno</string>
+    <string name="home_saluto_buon_pomeriggio">Buon pomeriggio</string>
+    <string name="home_saluto_buonasera">Buonasera</string>
+    <string name="home_durata_minuti">%1$d min</string>
+    <string name="home_durata_ore">%1$dh</string>
+    <string name="home_durata_ore_minuti">%1$dh %2$dmin</string>
+    <string name="home_barra_aderenza_titolo">Assunzioni di oggi</string>
+    <string name="home_azione_frequenza">Frequenza</string>
+    <string name="home_azione_medicinali">Medicinali</string>
+    <string name="home_etichetta_prossima_assunzione">PROSSIMA ASSUNZIONE</string>
+    <string name="home_countdown_ora">Ora</string>
+    <string name="home_countdown_tra">tra %1$s</string>
+    <string name="home_bottone_assumi">Assumi</string>
+    <string name="home_countdown_in_ritardo_da">in ritardo da %1$s</string>
+    <string name="home_completato_content_description">Lista medicine completate</string>
+    <string name="home_completato_titolo">Tutto fatto per oggi</string>
+    <string name="home_completato_sottotitolo">Hai assunto %1$d/%2$d medicine previste</string>
+    <string name="home_vuoto_titolo">Nessuna assunzione in programma</string>
+    <string name="home_vuoto_sottotitolo_medicinale_esistente">Nessuno tra i tuoi medicinali attivi è programmato per oggi</string>
+    <string name="home_vuoto_sottotitolo_nessun_medicinale">Abilita o aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni</string>
+    <string name="home_checkmark_content_description">Assunta</string>
+    <string name="home_dialog_anticipo_titolo">Assumere in anticipo?</string>
+    <string name="home_dialog_anticipo_testo">Non è ancora l\'orario previsto per %1$s. Vuoi assumerla comunque adesso?</string>
+    <string name="home_dialog_puntuale_titolo">Confermare l\'assunzione puntuale?</string>
+    <string name="home_dialog_puntuale_testo">%1$s verrà segnata come assunta alle %2$s, l\'orario previsto, invece che ora.</string>
+    <string name="home_ritardata_prevista_per">Prevista per le %1$s</string>
+
+    <!-- Account -->
+    <string name="account_snackbar_dati_salvati">Dati salvati</string>
+    <string name="account_campo_nome">Nome</string>
+    <string name="account_campo_cognome">Cognome</string>
+    <string name="account_campo_email">Email</string>
+    <string name="account_bottone_salva">Salva</string>
+
+    <!-- Settings -->
+    <string name="settings_sezione_generali">Generali</string>
+    <string name="settings_item_account_titolo">Account</string>
+    <string name="settings_item_account_sottotitolo">Informazioni sull\'account</string>
+    <string name="settings_item_dark_mode_titolo">Dark mode</string>
+
+    <!-- Medicinali -->
+    <string name="medicinali_vuoto_titolo">Nessun medicinale</string>
+    <string name="medicinali_vuoto_sottotitolo">Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni</string>
+    <string name="medicinali_bottone_aggiungi">Aggiungi medicinale</string>
+    <string name="medicinali_terminato">· terminato</string>
+    <string name="medicinali_conferma_eliminazione_testo">Eliminare \"%1$s\" definitivamente?</string>
+    <string name="medicinali_bottone_elimina">Elimina</string>
+    <string name="medicinali_frequenza_giornaliera">ogni giorno</string>
+    <string name="medicinali_frequenza_ogni_n_giorni">ogni %1$d giorni</string>
+    <string-array name="medicinali_giorni_settimana_iniziali">
+        <item>L</item>
+        <item>M</item>
+        <item>M</item>
+        <item>G</item>
+        <item>V</item>
+        <item>S</item>
+        <item>D</item>
+    </string-array>
+
+    <!-- Aggiungi/modifica medicinale -->
+    <string name="addmedicine_sezione_medicinale">Medicinale</string>
+    <string name="addmedicine_campo_nome_label">Nome *</string>
+    <string name="addmedicine_campo_nome_placeholder">es. Tachipirina</string>
+    <string name="addmedicine_campo_nome_errore">Il nome è obbligatorio</string>
+    <string name="addmedicine_campo_dosaggio_label">Dosaggio</string>
+    <string name="addmedicine_campo_dosaggio_placeholder">es. 500mg</string>
+    <string name="addmedicine_campo_note_label">Note</string>
+    <string name="addmedicine_campo_note_placeholder">es. Da prendere a stomaco pieno</string>
+    <string name="addmedicine_sezione_orari">Orari di assunzione</string>
+    <string name="addmedicine_sezione_frequenza">Frequenza</string>
+    <string name="addmedicine_sezione_durata">Durata terapia</string>
+    <string name="addmedicine_bottone_salva_modifiche">Salva modifiche</string>
+    <string name="addmedicine_bottone_salva_nuovo">Salva medicinale</string>
+    <string name="addmedicine_header_titolo_modifica">Modifica medicinale</string>
+    <string name="addmedicine_header_titolo_nuovo">Nuovo medicinale</string>
+    <string name="addmedicine_header_sottotitolo_modifica">Aggiorna i dettagli del promemoria</string>
+    <string name="addmedicine_header_sottotitolo_nuovo">Compila i dettagli per aggiungere un promemoria</string>
+    <string name="addmedicine_dialog_orario_titolo">Scegli orario</string>
+    <string name="addmedicine_dialog_orario_conferma">Aggiungi</string>
+    <string name="addmedicine_orari_errore">Aggiungi almeno un orario</string>
+    <string name="addmedicine_orari_vuoto">Nessun orario aggiunto</string>
+    <string name="addmedicine_bottone_aggiungi_orario">Aggiungi orario</string>
+    <string name="addmedicine_frequenza_opzione_giornaliera">Ogni giorno</string>
+    <string name="addmedicine_frequenza_opzione_intervallo">Intervallo</string>
+    <string name="addmedicine_frequenza_opzione_giorni">Giorni</string>
+    <string name="addmedicine_intervallo_domanda">Ogni quanti giorni?</string>
+    <string name="addmedicine_intervallo_minimo">2 giorni</string>
+    <string name="addmedicine_intervallo_massimo">30 giorni</string>
+    <string name="addmedicine_giorni_domanda">Seleziona i giorni</string>
+    <string name="addmedicine_giorni_errore">Seleziona almeno un giorno</string>
+    <string name="addmedicine_data_inizio_label">Inizio terapia</string>
+    <string name="addmedicine_data_fine_label">Fine terapia</string>
+    <string name="addmedicine_data_fine_valore_label">Data fine</string>
+    <string name="addmedicine_data_seleziona">Seleziona</string>
+    <string name="addmedicine_data_errore">Data di inizio successiva alla data di fine</string>
+    <string name="addmedicine_errore_medicinale_non_trovato">Medicinale non trovato</string>
+    <string name="addmedicine_errore_utente_non_trovato">Utente non trovato</string>
+
+    <!-- Navigazione -->
+    <string name="navigation_fab_aggiungi_content_description">Aggiungi mediciale</string>
+    <string name="navigation_titolo_impostazioni">Impostazioni</string>
+    <string name="navigation_titolo_account">Dettagli account</string>
+    <string name="navigation_content_description_aggiungi_medicinale">aggiungi medicinale</string>
+
+    <!-- Frequenza -->
+    <string name="frequenza_giorno_riepilogo_titolo">Assunzioni del giorno</string>
+    <string name="frequenza_giorno_vuoto_titolo">Nessuna assunzione registrata</string>
+    <string name="frequenza_giorno_vuoto_sottotitolo">Non risultano medicine previste per questo giorno</string>
+    <string name="frequenza_giorno_stato_assunta_alle">Assunta alle %1$s</string>
+    <string name="frequenza_giorno_stato_assunta">Assunta</string>
+    <string name="frequenza_giorno_stato_saltata">Saltata</string>
+    <string name="frequenza_giorno_stato_in_attesa">In attesa</string>
+    <string name="frequenza_mese_precedente">Mese precedente</string>
+    <string name="frequenza_mese_successivo">Mese successivo</string>
+    <string name="frequenza_legenda_giorni_con_assunzioni">Giorni con assunzioni registrate</string>
+
+    <!-- Permesso allarmi esatti -->
+    <string name="alarm_dialog_titolo">Permesso allarmi esatti necessario</string>
+    <string name="alarm_dialog_testo">Per avvisarti puntualmente quando è ora di prendere una medicina, PillsOClock ha bisogno del permesso per pianificare allarmi esatti. Attivalo dalle impostazioni di sistema.</string>
+    <string name="alarm_dialog_bottone">Apri impostazioni</string>
+
+    <!-- Notifiche -->
+    <string name="notifica_canale_nome">Assunzione</string>
+    <string name="notifica_canale_descrizione">Utilizzata per notificare il momento dell\'assunzione di una medicina</string>
+    <string name="notifica_testo_con_dosaggio">%1$s · ore %2$s</string>
+    <string name="notifica_testo_senza_dosaggio">Ore %1$s</string>
+    <string name="notifica_titolo_ora_di_prendere">È ora di prendere %1$s</string>
 </resources>

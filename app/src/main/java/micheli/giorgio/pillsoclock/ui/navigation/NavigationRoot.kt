@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -55,6 +56,7 @@ import com.example.nav3recipes.bottomsheet.BottomSheetSceneStrategy
 import com.google.firebase.Firebase
 import com.google.firebase.analytics.analytics
 import micheli.giorgio.pillsoclock.LocalSnackbarHostState
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.ui.addMedicine.AddMedicinale
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaGiornoScreen
 import micheli.giorgio.pillsoclock.ui.frequenza.FrequenzaScreen
@@ -148,7 +150,7 @@ fun NavigationRoot(nomeUtente: String? = null) {
                         Icon(
                             modifier = Modifier.size(32.dp),
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Aggiungi mediciale",
+                            contentDescription = stringResource(R.string.navigation_fab_aggiungi_content_description),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
@@ -297,11 +299,12 @@ fun SelectTopBar(
             is Routes.AddMedicine, is Routes.Settings, is Routes.SettingsRoutes.Account, is Routes.Frequenza, is Routes.FrequenzaGiorno, is Routes.Medicinali -> {
 
                 val title = when (currentRoute) {
-                    is Routes.Settings -> "Impostazioni"
-                    is Routes.SettingsRoutes.Account -> "Dettagli account"
-                    is Routes.Frequenza -> "Frequenza"
-                    is Routes.Medicinali -> "Medicinali"
-                    is Routes.AddMedicine -> if (currentRoute.idMedicinale != null) "Modifica medicinale" else "Nuovo medicinale"
+                    is Routes.Settings -> stringResource(R.string.navigation_titolo_impostazioni)
+                    is Routes.SettingsRoutes.Account -> stringResource(R.string.navigation_titolo_account)
+                    is Routes.Frequenza -> stringResource(R.string.home_azione_frequenza)
+                    is Routes.Medicinali -> stringResource(R.string.home_azione_medicinali)
+                    is Routes.AddMedicine -> if (currentRoute.idMedicinale != null) stringResource(R.string.addmedicine_header_titolo_modifica)
+                    else stringResource(R.string.addmedicine_header_titolo_nuovo)
                     is Routes.FrequenzaGiorno -> {
                         val formatterData = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
                         LocalDate.ofEpochDay(currentRoute.epochDay).format(formatterData).replaceFirstChar { it.uppercase() }
@@ -319,7 +322,7 @@ fun SelectTopBar(
                             ) {
                                 Text(title)
                                 IconButton(onClick = onAddMedicinale) {
-                                    Icon(Icons.Default.Add, contentDescription = "aggiungi medicinale")
+                                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.navigation_content_description_aggiungi_medicinale))
                                 }
                             }
                         } else
@@ -327,7 +330,7 @@ fun SelectTopBar(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.common_indietro))
                         }
                     }
                 )

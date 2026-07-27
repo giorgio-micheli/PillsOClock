@@ -55,6 +55,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -182,7 +184,7 @@ private fun MedicinaliVuoto(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Nessun medicinale",
+                text = stringResource(R.string.medicinali_vuoto_titolo),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -190,14 +192,14 @@ private fun MedicinaliVuoto(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "Aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                text = stringResource(R.string.medicinali_vuoto_sottotitolo),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(16.dp))
             OutlinedButton(onClick = onAggiungiClick, shape = RoundedCornerShape(50)) {
-                Text("Aggiungi medicinale")
+                Text(stringResource(R.string.medicinali_bottone_aggiungi))
             }
         }
 
@@ -370,7 +372,7 @@ private fun RigaMedicinale(
                     )
                     if (scaduto) {
                         Text(
-                            text = "· terminato",
+                            text = stringResource(R.string.medicinali_terminato),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -428,7 +430,7 @@ private fun RigaConfermaEliminazione(
                 modifier = Modifier.size(20.dp)
             )
             Text(
-                text = "Eliminare \"$nomeMedicinale\" definitivamente?",
+                text = stringResource(R.string.medicinali_conferma_eliminazione_testo, nomeMedicinale),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -447,7 +449,7 @@ private fun RigaConfermaEliminazione(
                     Color.White
                 )
             ) {
-                Text("Annulla")
+                Text(stringResource(R.string.common_annulla))
             }
             Button(
                 modifier = Modifier.weight(1f),
@@ -464,24 +466,29 @@ private fun RigaConfermaEliminazione(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("Elimina")
+                Text(stringResource(R.string.medicinali_bottone_elimina))
             }
         }
     }
 }
 
+@Composable
 private fun testoRiassuntoPiano(pianoConOrari: PianoConOrari): String {
     val orari = pianoConOrari.orari
         .sortedBy { it.orario }
         .joinToString(", ") { it.orario.format(DateTimeFormatter.ofPattern("HH:mm")) }
 
     val frequenza = when (pianoConOrari.piano.tipoFrequenza) {
-        TipoFrequenza.GIORNALIERA -> "ogni giorno"
-        TipoFrequenza.OGNI_N_GIORNI -> "ogni ${pianoConOrari.piano.intervalloGiorni ?: 1} giorni"
+        TipoFrequenza.GIORNALIERA -> stringResource(R.string.medicinali_frequenza_giornaliera)
+        TipoFrequenza.OGNI_N_GIORNI -> stringResource(
+            R.string.medicinali_frequenza_ogni_n_giorni,
+            pianoConOrari.piano.intervalloGiorni ?: 1
+        )
         TipoFrequenza.GIORNI_SETTIMANA -> {
-            val lettere = listOf(1 to "L", 2 to "M", 3 to "M", 4 to "G", 5 to "V", 6 to "S", 7 to "D")
+            // Ordine Lunedì..Domenica: coerente con i numeri 1..7 usati da PianoAssunzione.giorniSettimana
+            val lettere = stringArrayResource(R.array.medicinali_giorni_settimana_iniziali)
             val giorni = pianoConOrari.piano.giorniSettimana.orEmpty()
-            lettere.filter { (numero, _) -> giorni.contains(numero) }.joinToString(" ") { it.second }
+            (1..7).filter { giorni.contains(it) }.joinToString(" ") { lettere[it - 1] }
         }
     }
 

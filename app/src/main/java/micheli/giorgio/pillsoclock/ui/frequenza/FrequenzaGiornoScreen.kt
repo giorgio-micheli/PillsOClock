@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,16 +47,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import micheli.giorgio.pillsoclock.PillsOClockApp
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.domain.model.AssunzioneEffettuata
 import micheli.giorgio.pillsoclock.domain.model.AssunzioneGiornaliera
 import micheli.giorgio.pillsoclock.domain.model.AssunzionePrevista
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
+import java.util.Locale
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun FrequenzaGiornoScreen(data: LocalDate) {
@@ -148,7 +150,7 @@ private fun RiepilogoGiorno(assunte: Int, totali: Int) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Assunzioni del giorno",
+                text = stringResource(R.string.frequenza_giorno_riepilogo_titolo),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -184,14 +186,14 @@ private fun NessunaAssunzioneRegistrata() {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "Nessuna assunzione registrata",
+            text = stringResource(R.string.frequenza_giorno_vuoto_titolo),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Non risultano medicine previste per questo giorno",
+            text = stringResource(R.string.frequenza_giorno_vuoto_sottotitolo),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -263,11 +265,12 @@ private fun AssunzioneGiornoCard(assunzione: AssunzioneGiornaliera) {
                         )
                     }
                     Text(
-                        text = "Prevista per le ${
+                        text = stringResource(
+                            R.string.home_ritardata_prevista_per,
                             assunzione.assunzionePrevista.orarioPrevisto.format(
                                 DateTimeFormatter.ofPattern("HH:mm")
                             )
-                        }",
+                        ),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -278,10 +281,11 @@ private fun AssunzioneGiornoCard(assunzione: AssunzioneGiornaliera) {
                         val orarioEffettivo = assunzione.assunzioneEffettuata
                             ?.timestampAssunzione
                             ?.format(DateTimeFormatter.ofPattern("HH:mm"))
-                        if (orarioEffettivo != null) "Assunta alle $orarioEffettivo" else "Assunta"
+                        if (orarioEffettivo != null) stringResource(R.string.frequenza_giorno_stato_assunta_alle, orarioEffettivo)
+                        else stringResource(R.string.frequenza_giorno_stato_assunta)
                     }
-                    StatoAssunzione.SALTATA -> "Saltata"
-                    StatoAssunzione.IN_ATTESA -> "In attesa"
+                    StatoAssunzione.SALTATA -> stringResource(R.string.frequenza_giorno_stato_saltata)
+                    StatoAssunzione.IN_ATTESA -> stringResource(R.string.frequenza_giorno_stato_in_attesa)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,

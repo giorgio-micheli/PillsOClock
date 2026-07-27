@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import micheli.giorgio.pillsoclock.PillsOClockApp
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -143,7 +146,7 @@ private fun SelettoreMese(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onMesePrecedenteClick) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Mese precedente")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.frequenza_mese_precedente))
         }
         Text(
             text = meseFormattato,
@@ -157,7 +160,7 @@ private fun SelettoreMese(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = "Mese successivo",
+                contentDescription = stringResource(R.string.frequenza_mese_successivo),
                 tint = if (puoAndareAvanti) {
                     MaterialTheme.colorScheme.onBackground
                 } else {
@@ -175,7 +178,7 @@ private fun CalendarioMese(
     onGiornoClick: (LocalDate) -> Unit
 ) {
     val oggi = remember { LocalDate.now() }
-    val letterGiorniSettimana = listOf("L", "M", "M", "G", "V", "S", "D")
+    val letterGiorniSettimana = stringArrayResource(R.array.medicinali_giorni_settimana_iniziali)
 
     val celle = remember(mese) {
         val primoGiorno = mese.atDay(1)
@@ -281,7 +284,7 @@ private fun Legenda() {
                 .background(MaterialTheme.colorScheme.primaryContainer)
         )
         Text(
-            text = "Giorni con assunzioni registrate",
+            text = stringResource(R.string.frequenza_legenda_giorni_con_assunzioni),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

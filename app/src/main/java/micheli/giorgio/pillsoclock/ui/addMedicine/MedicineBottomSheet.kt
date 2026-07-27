@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -54,6 +56,7 @@ import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nav3recipes.bottomsheet.LocalBottomSheetDismiss
 import micheli.giorgio.pillsoclock.PillsOClockApp
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 import java.time.LocalDate
@@ -207,14 +210,14 @@ private fun AggiungiMedicinaleContent(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Sezione info medicinale
-            SezioneCard(titolo = "Medicinale") {
+            SezioneCard(titolo = stringResource(R.string.addmedicine_sezione_medicinale)) {
                 CampoTestoModerno(
                     valore = uiState.nome,
                     onValueChange = onNomeChange,
-                    label = "Nome *",
-                    placeholder = "es. Tachipirina",
+                    label = stringResource(R.string.addmedicine_campo_nome_label),
+                    placeholder = stringResource(R.string.addmedicine_campo_nome_placeholder),
                     errore = uiState.nomeError,
-                    messaggioErrore = "Il nome è obbligatorio",
+                    messaggioErrore = stringResource(R.string.addmedicine_campo_nome_errore),
                     leadingIcon = {
                         Icon(
                             Icons.Default.Edit,
@@ -227,20 +230,20 @@ private fun AggiungiMedicinaleContent(
                 CampoTestoModerno(
                     valore = uiState.dosaggio,
                     onValueChange = onDosaggioChange,
-                    label = "Dosaggio",
-                    placeholder = "es. 500mg"
+                    label = stringResource(R.string.addmedicine_campo_dosaggio_label),
+                    placeholder = stringResource(R.string.addmedicine_campo_dosaggio_placeholder)
                 )
                 CampoTestoModerno(
                     valore = uiState.note,
                     onValueChange = onNoteChange,
-                    label = "Note",
-                    placeholder = "es. Da prendere a stomaco pieno",
+                    label = stringResource(R.string.addmedicine_campo_note_label),
+                    placeholder = stringResource(R.string.addmedicine_campo_note_placeholder),
                     righeMax = 3
                 )
             }
 
             // Sezione orari
-            SezioneCard(titolo = "Orari di assunzione") {
+            SezioneCard(titolo = stringResource(R.string.addmedicine_sezione_orari)) {
                 SezioneOrari(
                     orari = uiState.orari,
                     onOrarioAggiunto = onOrarioAggiunto,
@@ -249,7 +252,7 @@ private fun AggiungiMedicinaleContent(
                 )
             }
 
-            SezioneCard(titolo = "Frequenza") {
+            SezioneCard(titolo = stringResource(R.string.addmedicine_sezione_frequenza)) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(
                         if (uiState.tipoFrequenza == TipoFrequenza.GIORNALIERA) 0.dp else 12.dp
@@ -286,7 +289,7 @@ private fun AggiungiMedicinaleContent(
             }
 
             // Sezione date
-            SezioneCard(titolo = "Durata terapia") {
+            SezioneCard(titolo = stringResource(R.string.addmedicine_sezione_durata)) {
                 SezioneDatePicker(
                     dataInizio = uiState.dataInizio,
                     dataFine = uiState.dataFine,
@@ -331,7 +334,8 @@ private fun AggiungiMedicinaleContent(
                     )
                 } else {
                     Text(
-                        if (uiState.isModifica) "Salva modifiche" else "Salva medicinale",
+                        if (uiState.isModifica) stringResource(R.string.addmedicine_bottone_salva_modifiche)
+                        else stringResource(R.string.addmedicine_bottone_salva_nuovo),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
@@ -339,7 +343,7 @@ private fun AggiungiMedicinaleContent(
             }
 
             // Messaggio di errore globale
-            if (uiState.errorMessage != null) {
+            if (uiState.errorMessage != null || uiState.errorMessageRes != null) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.12f)),
                     shape = RoundedCornerShape(12.dp)
@@ -356,7 +360,7 @@ private fun AggiungiMedicinaleContent(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            uiState.errorMessage,
+                            uiState.errorMessageRes?.let { stringResource(it) } ?: uiState.errorMessage.orEmpty(),
                             color = MaterialTheme.colorScheme.error,
                             fontSize = 13.sp
                         )
@@ -385,13 +389,15 @@ fun SheetHeader(
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
-                if (isModifica) "Modifica medicinale" else "Nuovo medicinale",
+                if (isModifica) stringResource(R.string.addmedicine_header_titolo_modifica)
+                else stringResource(R.string.addmedicine_header_titolo_nuovo),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                if (isModifica) "Aggiorna i dettagli del promemoria" else "Compila i dettagli per aggiungere un promemoria",
+                if (isModifica) stringResource(R.string.addmedicine_header_sottotitolo_modifica)
+                else stringResource(R.string.addmedicine_header_sottotitolo_nuovo),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -521,7 +527,7 @@ private fun SezioneOrari(
             onDismissRequest = { mostraTimePicker = false },
             containerColor = MaterialTheme.colorScheme.surface,
             title = {
-                Text("Scegli orario", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.addmedicine_dialog_orario_titolo), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
             },
             text = {
                 TimePicker(
@@ -549,12 +555,12 @@ private fun SezioneOrari(
                     onOrarioAggiunto(LocalTime.of(timePickerState.hour, timePickerState.minute))
                     mostraTimePicker = false
                 }) {
-                    Text("Aggiungi", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.addmedicine_dialog_orario_conferma), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { mostraTimePicker = false }) {
-                    Text("Annulla", color = MaterialTheme.colorScheme.secondary)
+                    Text(stringResource(R.string.common_annulla), color = MaterialTheme.colorScheme.secondary)
                 }
             }
         )
@@ -576,7 +582,8 @@ private fun SezioneOrari(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    if (errore) "Aggiungi almeno un orario" else "Nessun orario aggiunto",
+                    if (errore) stringResource(R.string.addmedicine_orari_errore)
+                    else stringResource(R.string.addmedicine_orari_vuoto),
                     color = if (errore) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
                     fontSize = 13.sp
                 )
@@ -606,7 +613,7 @@ private fun SezioneOrari(
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Aggiungi orario", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.addmedicine_bottone_aggiungi_orario), fontSize = 13.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -635,7 +642,7 @@ private fun ChipOrario(orario: LocalTime, onRimuovi: () -> Unit) {
         )
         Icon(
             Icons.Default.Close,
-            contentDescription = "Rimuovi",
+            contentDescription = stringResource(R.string.common_rimuovi),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
             modifier = Modifier
                 .size(14.dp)
@@ -654,9 +661,9 @@ private fun SegmentedSelectorFrequenza(
     onSelezionato: (TipoFrequenza) -> Unit
 ) {
     val opzioni = listOf(
-        TipoFrequenza.GIORNALIERA to "Ogni giorno",
-        TipoFrequenza.OGNI_N_GIORNI to "Intervallo",
-        TipoFrequenza.GIORNI_SETTIMANA to "Giorni"
+        TipoFrequenza.GIORNALIERA to stringResource(R.string.addmedicine_frequenza_opzione_giornaliera),
+        TipoFrequenza.OGNI_N_GIORNI to stringResource(R.string.addmedicine_frequenza_opzione_intervallo),
+        TipoFrequenza.GIORNI_SETTIMANA to stringResource(R.string.addmedicine_frequenza_opzione_giorni)
     )
 
     var containerWidthPx by remember { mutableIntStateOf(0) }
@@ -746,7 +753,7 @@ private fun SezioneIntervalloGiorni(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "Ogni quanti giorni?",
+                stringResource(R.string.addmedicine_intervallo_domanda),
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 13.sp
             )
@@ -801,8 +808,8 @@ private fun SezioneIntervalloGiorni(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("2 giorni", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
-            Text("30 giorni", color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+            Text(stringResource(R.string.addmedicine_intervallo_minimo), color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
+            Text(stringResource(R.string.addmedicine_intervallo_massimo), color = MaterialTheme.colorScheme.onSurface, fontSize = 11.sp)
         }
     }
 }
@@ -817,14 +824,15 @@ private fun SezioneGiorniSettimana(
     onGiornoToggle: (Int) -> Unit,
     errore: Boolean
 ) {
-    val giorni = listOf(1 to "L", 2 to "M", 3 to "M", 4 to "G", 5 to "V", 6 to "S", 7 to "D")
+    val lettereGiorni = stringArrayResource(R.array.medicinali_giorni_settimana_iniziali)
+    val giorni = (1..7).map { it to lettereGiorni[it - 1] }
 
     Column(
         modifier = Modifier.padding(top = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            "Seleziona i giorni",
+            stringResource(R.string.addmedicine_giorni_domanda),
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 13.sp
         )
@@ -866,7 +874,7 @@ private fun SezioneGiorniSettimana(
         }
         if (errore) {
             Text(
-                "Seleziona almeno un giorno",
+                stringResource(R.string.addmedicine_giorni_errore),
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(start = 4.dp)
@@ -924,11 +932,11 @@ private fun SezioneDatePicker(
                         onDataInizioChange(LocalDate.ofEpochDay(millis / 86400000L))
                     }
                     mostraPickerInizio = false
-                }) { Text("Conferma", color = MaterialTheme.colorScheme.primary) }
+                }) { Text(stringResource(R.string.common_conferma), color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
                 TextButton(onClick = { mostraPickerInizio = false }) {
-                    Text("Annulla", color = MaterialTheme.colorScheme.onSecondary)
+                    Text(stringResource(R.string.common_annulla), color = MaterialTheme.colorScheme.onSecondary)
                 }
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
@@ -960,11 +968,11 @@ private fun SezioneDatePicker(
                         onDataFineChange(LocalDate.ofEpochDay(millis / 86400000L))
                     }
                     mostraPickerFine = false
-                }) { Text("Conferma", color = MaterialTheme.colorScheme.primary) }
+                }) { Text(stringResource(R.string.common_conferma), color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
                 TextButton(onClick = { mostraPickerFine = false }) {
-                    Text("Annulla", color = MaterialTheme.colorScheme.onSecondary)
+                    Text(stringResource(R.string.common_annulla), color = MaterialTheme.colorScheme.onSecondary)
                 }
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
@@ -976,7 +984,7 @@ private fun SezioneDatePicker(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Data inizio
         ColumnData(
-            etichetta = "Inizio terapia",
+            etichetta = stringResource(R.string.addmedicine_data_inizio_label),
             valore = dataInizio.format(formatter),
             onClick = { mostraPickerInizio = true },
             error = dataError
@@ -988,7 +996,7 @@ private fun SezioneDatePicker(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Fine terapia", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
+            Text(stringResource(R.string.addmedicine_data_fine_label), color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
             Switch(
                 checked = dataFineAbilitata,
                 onCheckedChange = {
@@ -1011,8 +1019,8 @@ private fun SezioneDatePicker(
             exit = shrinkVertically()
         ) {
             RowData(
-                etichetta = "Data fine",
-                valore = dataFine?.format(formatter) ?: "Seleziona",
+                etichetta = stringResource(R.string.addmedicine_data_fine_valore_label),
+                valore = dataFine?.format(formatter) ?: stringResource(R.string.addmedicine_data_seleziona),
                 onClick = { mostraPickerFine = true },
                 false
             )
@@ -1097,7 +1105,7 @@ private fun ColumnData(
             exit = shrinkVertically()
         ) {
             Text(
-                text = "Data di inizio successiva alla data di fine",
+                text = stringResource(R.string.addmedicine_data_errore),
                 color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                 fontSize = 13.sp
             )

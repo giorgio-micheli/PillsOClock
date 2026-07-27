@@ -1,0 +1,145 @@
+<resources>
+    <string name="app_name">PillsOClock</string>
+
+    <!-- Common, shared across multiple screens -->
+    <string name="common_annulla">Cancel</string>
+    <string name="common_conferma">Confirm</string>
+    <string name="common_assumi_in_anticipo">Take early</string>
+    <string name="common_assumi_in_ritardo">Take now (late)</string>
+    <string name="common_presa_puntualmente">Taken on time</string>
+    <string name="common_rimuovi">Remove</string>
+    <string name="common_indietro">Back</string>
+
+    <!-- Home -->
+    <string name="home_snackbar_segnata_come_assunta">%1$s marked as taken</string>
+    <string name="home_sezione_in_ritardo">OVERDUE</string>
+    <string name="home_sezione_prossime_assunzioni">UPCOMING DOSES</string>
+    <string name="home_account_content_description">Account</string>
+    <string name="home_saluto_buongiorno">Good morning</string>
+    <string name="home_saluto_buon_pomeriggio">Good afternoon</string>
+    <string name="home_saluto_buonasera">Good evening</string>
+    <string name="home_durata_minuti">%1$d min</string>
+    <string name="home_durata_ore">%1$dh</string>
+    <string name="home_durata_ore_minuti">%1$dh %2$dmin</string>
+    <string name="home_barra_aderenza_titolo">Today\'s doses</string>
+    <string name="home_azione_frequenza">Frequency</string>
+    <string name="home_azione_medicinali">Medications</string>
+    <string name="home_etichetta_prossima_assunzione">NEXT DOSE</string>
+    <string name="home_countdown_ora">Now</string>
+    <string name="home_countdown_tra">in %1$s</string>
+    <string name="home_bottone_assumi">Take</string>
+    <string name="home_countdown_in_ritardo_da">overdue by %1$s</string>
+    <string name="home_completato_content_description">Completed medication list</string>
+    <string name="home_completato_titolo">All done for today</string>
+    <string name="home_completato_sottotitolo">You\'ve taken %1$d/%2$d scheduled medications</string>
+    <string name="home_vuoto_titolo">No doses scheduled</string>
+    <string name="home_vuoto_sottotitolo_medicinale_esistente">None of your active medications are scheduled for today</string>
+    <string name="home_vuoto_sottotitolo_nessun_medicinale">Enable or add a medication to start tracking your doses</string>
+    <string name="home_checkmark_content_description">Taken</string>
+    <string name="home_dialog_anticipo_titolo">Take it early?</string>
+    <string name="home_dialog_anticipo_testo">It\'s not yet time for %1$s. Do you want to take it now anyway?</string>
+    <string name="home_dialog_puntuale_titolo">Confirm taking it on time?</string>
+    <string name="home_dialog_puntuale_testo">%1$s will be marked as taken at %2$s, the scheduled time, instead of now.</string>
+    <string name="home_ritardata_prevista_per">Scheduled for %1$s</string>
+
+    <!-- Account -->
+    <string name="account_snackbar_dati_salvati">Data saved</string>
+    <string name="account_campo_nome">First name</string>
+    <string name="account_campo_cognome">Last name</string>
+    <string name="account_campo_email">Email</string>
+    <string name="account_bottone_salva">Save</string>
+
+    <!-- Settings -->
+    <string name="settings_sezione_generali">General</string>
+    <string name="settings_item_account_titolo">Account</string>
+    <string name="settings_item_account_sottotitolo">Account information</string>
+    <string name="settings_item_dark_mode_titolo">Dark mode</string>
+    <!-- Language names are not translated: always shown in the language itself -->
+    <!-- Medications -->
+    <string name="medicinali_vuoto_titolo">No medications</string>
+    <string name="medicinali_vuoto_sottotitolo">Add a medication to start tracking your doses</string>
+    <string name="medicinali_bottone_aggiungi">Add medication</string>
+    <string name="medicinali_terminato">· ended</string>
+    <string name="medicinali_conferma_eliminazione_testo">Delete \"%1$s\" permanently?</string>
+    <string name="medicinali_bottone_elimina">Delete</string>
+    <string name="medicinali_frequenza_giornaliera">every day</string>
+    <string name="medicinali_frequenza_ogni_n_giorni">every %1$d days</string>
+    <string-array name="medicinali_giorni_settimana_iniziali">
+        <item>M</item>
+        <item>T</item>
+        <item>W</item>
+        <item>T</item>
+        <item>F</item>
+        <item>S</item>
+        <item>S</item>
+    </string-array>
+
+    <!-- Add/edit medication -->
+    <string name="addmedicine_sezione_medicinale">Medication</string>
+    <string name="addmedicine_campo_nome_label">Name *</string>
+    <string name="addmedicine_campo_nome_placeholder">e.g. Aspirin</string>
+    <string name="addmedicine_campo_nome_errore">Name is required</string>
+    <string name="addmedicine_campo_dosaggio_label">Dosage</string>
+    <string name="addmedicine_campo_dosaggio_placeholder">e.g. 500mg</string>
+    <string name="addmedicine_campo_note_label">Notes</string>
+    <string name="addmedicine_campo_note_placeholder">e.g. Take with food</string>
+    <string name="addmedicine_sezione_orari">Dose times</string>
+    <string name="addmedicine_sezione_frequenza">Frequency</string>
+    <string name="addmedicine_sezione_durata">Treatment duration</string>
+    <string name="addmedicine_bottone_salva_modifiche">Save changes</string>
+    <string name="addmedicine_bottone_salva_nuovo">Save medication</string>
+    <string name="addmedicine_header_titolo_modifica">Edit medication</string>
+    <string name="addmedicine_header_titolo_nuovo">New medication</string>
+    <string name="addmedicine_header_sottotitolo_modifica">Update the reminder details</string>
+    <string name="addmedicine_header_sottotitolo_nuovo">Fill in the details to add a reminder</string>
+    <string name="addmedicine_dialog_orario_titolo">Choose a time</string>
+    <string name="addmedicine_dialog_orario_conferma">Add</string>
+    <string name="addmedicine_orari_errore">Add at least one time</string>
+    <string name="addmedicine_orari_vuoto">No time added yet</string>
+    <string name="addmedicine_bottone_aggiungi_orario">Add time</string>
+    <string name="addmedicine_frequenza_opzione_giornaliera">Every day</string>
+    <string name="addmedicine_frequenza_opzione_intervallo">Interval</string>
+    <string name="addmedicine_frequenza_opzione_giorni">Days</string>
+    <string name="addmedicine_intervallo_domanda">Every how many days?</string>
+    <string name="addmedicine_intervallo_minimo">2 days</string>
+    <string name="addmedicine_intervallo_massimo">30 days</string>
+    <string name="addmedicine_giorni_domanda">Select the days</string>
+    <string name="addmedicine_giorni_errore">Select at least one day</string>
+    <string name="addmedicine_data_inizio_label">Treatment start</string>
+    <string name="addmedicine_data_fine_label">Treatment end</string>
+    <string name="addmedicine_data_fine_valore_label">End date</string>
+    <string name="addmedicine_data_seleziona">Select</string>
+    <string name="addmedicine_data_errore">Start date is after the end date</string>
+    <string name="addmedicine_errore_medicinale_non_trovato">Medication not found</string>
+    <string name="addmedicine_errore_utente_non_trovato">User not found</string>
+
+    <!-- Navigation -->
+    <string name="navigation_fab_aggiungi_content_description">Add medication</string>
+    <string name="navigation_titolo_impostazioni">Settings</string>
+    <string name="navigation_titolo_account">Account details</string>
+    <string name="navigation_content_description_aggiungi_medicinale">add medication</string>
+
+    <!-- Frequency -->
+    <string name="frequenza_giorno_riepilogo_titolo">Doses for this day</string>
+    <string name="frequenza_giorno_vuoto_titolo">No doses recorded</string>
+    <string name="frequenza_giorno_vuoto_sottotitolo">No medications were scheduled for this day</string>
+    <string name="frequenza_giorno_stato_assunta_alle">Taken at %1$s</string>
+    <string name="frequenza_giorno_stato_assunta">Taken</string>
+    <string name="frequenza_giorno_stato_saltata">Skipped</string>
+    <string name="frequenza_giorno_stato_in_attesa">Pending</string>
+    <string name="frequenza_mese_precedente">Previous month</string>
+    <string name="frequenza_mese_successivo">Next month</string>
+    <string name="frequenza_legenda_giorni_con_assunzioni">Days with recorded doses</string>
+
+    <!-- Exact alarm permission -->
+    <string name="alarm_dialog_titolo">Exact alarm permission required</string>
+    <string name="alarm_dialog_testo">To notify you exactly when it\'s time to take a medication, PillsOClock needs permission to schedule exact alarms. Enable it in the system settings.</string>
+    <string name="alarm_dialog_bottone">Open settings</string>
+
+    <!-- Notifications -->
+    <string name="notifica_canale_nome">Dose reminder</string>
+    <string name="notifica_canale_descrizione">Used to notify you when it\'s time to take a medication</string>
+    <string name="notifica_testo_con_dosaggio">%1$s · at %2$s</string>
+    <string name="notifica_testo_senza_dosaggio">At %1$s</string>
+    <string name="notifica_titolo_ora_di_prendere">Time to take %1$s</string>
+</resources>

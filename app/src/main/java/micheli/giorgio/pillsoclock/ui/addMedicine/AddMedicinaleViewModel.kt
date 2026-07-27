@@ -1,5 +1,6 @@
 package micheli.giorgio.pillsoclock.ui.addMedicine
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -8,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.data.local.entity.StatoAssunzione
 import micheli.giorgio.pillsoclock.data.local.entity.TipoFrequenza
 import micheli.giorgio.pillsoclock.domain.model.Medicinale
@@ -33,6 +35,7 @@ data class AggiungiMedicinaleUiState(
     val isLoading: Boolean = false,
     val isModifica: Boolean = false,
     val errorMessage: String? = null,
+    @param:StringRes val errorMessageRes: Int? = null,
     val salvatagioCompletato: Boolean = false,
     // errori di validazione per singolo campo
     val nomeError: Boolean = false,
@@ -72,7 +75,7 @@ class AddMedicinaleViewModel(
             _uiState.update { it.copy(isLoading = true) }
             val medicinaleConPiano = medicinaleRepository.getMedicinaleConPianoEOrari(id).firstOrNull()
             if (medicinaleConPiano == null) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Medicinale non trovato") }
+                _uiState.update { it.copy(isLoading = false, errorMessageRes = R.string.addmedicine_errore_medicinale_non_trovato) }
                 return@launch
             }
 
@@ -230,7 +233,7 @@ class AddMedicinaleViewModel(
                 } else {
                     val utente = utenteRepository.getUtente().firstOrNull()
                     if (utente == null) {
-                        _uiState.update { it.copy(isLoading = false, errorMessage = "Utente non trovato") }
+                        _uiState.update { it.copy(isLoading = false, errorMessageRes = R.string.addmedicine_errore_utente_non_trovato) }
                         return@launch
                     }
 

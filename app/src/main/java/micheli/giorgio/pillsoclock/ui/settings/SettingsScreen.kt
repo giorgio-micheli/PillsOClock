@@ -3,6 +3,7 @@ package micheli.giorgio.pillsoclock.ui.settings
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import micheli.giorgio.pillsoclock.BuildConfig
 import micheli.giorgio.pillsoclock.PillsOClockApp
+import micheli.giorgio.pillsoclock.R
 import micheli.giorgio.pillsoclock.ui.theme.AppTheme
 
 /**
@@ -99,15 +102,15 @@ fun Settings(
     // Dichiaro e definisco le varie sezioni che saranno presenti nella schermata
     val sections = listOf(
         SettingsSection(
-            title = "Generali",
+            title = stringResource(R.string.settings_sezione_generali),
             items = listOf(
                 SettingsItem.Clickable(
-                    title = "Account",
-                    "Informazioni sull'account",
+                    title = stringResource(R.string.settings_item_account_titolo),
+                    stringResource(R.string.settings_item_account_sottotitolo),
                     onClick = onNavigateToAccountScreen
                 ),
                 SettingsItem.Toggle(
-                    title = "Dark mode",
+                    title = stringResource(R.string.settings_item_dark_mode_titolo),
                     checked = uiState.darkModeAbilitata,
                     onCheckedChange = onDarkModeToggle
                 )

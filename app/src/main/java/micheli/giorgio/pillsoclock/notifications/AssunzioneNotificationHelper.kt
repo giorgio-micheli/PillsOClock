@@ -15,7 +15,9 @@ import micheli.giorgio.pillsoclock.R
 object AssunzioneNotificationHelper {
 
     const val ASSUNZIONE_CHANNEL_ID = "assunzione_channel"
-    const val ASSUNZIONE_CHANNEL_DESCRIPTION = "Utilizzata per notificare il momento dell'assunzione di una medicina"
+
+    fun channelDescription(context: Context): String =
+        context.getString(R.string.notifica_canale_descrizione)
 
     fun mostraNotifica(
         context: Context,
@@ -42,14 +44,14 @@ object AssunzioneNotificationHelper {
         )
 
         val testoContenuto = if (dosaggio.isNullOrBlank()) {
-            "Ore $orarioPrevisto"
+            context.getString(R.string.notifica_testo_senza_dosaggio, orarioPrevisto)
         } else {
-            "$dosaggio · ore $orarioPrevisto"
+            context.getString(R.string.notifica_testo_con_dosaggio, dosaggio, orarioPrevisto)
         }
 
         val notifica = NotificationCompat.Builder(context, ASSUNZIONE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_pill)
-            .setContentTitle("È ora di prendere $nomeMedicinale")
+            .setContentTitle(context.getString(R.string.notifica_titolo_ora_di_prendere, nomeMedicinale))
             .setContentText(testoContenuto)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

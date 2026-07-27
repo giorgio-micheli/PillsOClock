@@ -103,6 +103,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -269,6 +270,11 @@ fun Home(
     // Parametrizzato dalla funzione di registrazione così sia la conferma
     // "normale" (adesso) sia quella "puntuale" (orario previsto) condividono
     // la stessa logica di Snackbar/annullamento.
+    // Risolte qui (contesto composable) e non dentro confermaEMostraSnackbar, che è una
+    // funzione locale non-@Composable e non potrebbe chiamare stringResource().
+    val messaggioSegnataComeAssunta = stringResource(R.string.home_snackbar_segnata_come_assunta)
+    val etichettaAnnulla = stringResource(R.string.common_annulla)
+
     fun confermaEMostraSnackbar(
         assunzione: AssunzioneGiornaliera,
         registra: (AssunzionePrevista) -> Unit
@@ -279,8 +285,8 @@ fun Home(
             // showSnackBar è una suspend function, quindi in certi punti sospenderà la coroutine
             // ma lascerà comunque il thread libero di fare altro, non sta di fatto bloccando il thread
             val risultato = snackbarHostState.showSnackbar(
-                message = "${assunzione.nomeMedicinale} segnata come assunta",
-                actionLabel = "Annulla",
+                message = messaggioSegnataComeAssunta.format(assunzione.nomeMedicinale),
+                actionLabel = etichettaAnnulla,
                 duration = SnackbarDuration.Short
             )
             if (risultato == SnackbarResult.ActionPerformed) {
@@ -358,7 +364,7 @@ fun Home(
             if (uiState.inRitardo.isNotEmpty()) {
                 item {
                     SezioneTitolo(
-                        testo = "IN RITARDO",
+                        testo = stringResource(R.string.home_sezione_in_ritardo),
                         numero = uiState.inRitardo.size,
                         icon = Icons.Default.Warning,
                         accentColor = MaterialTheme.colorScheme.error
@@ -372,7 +378,7 @@ fun Home(
             if (uiState.prossimeAssunzioni.isNotEmpty()) {
                 item {
                     SezioneTitolo(
-                        testo = "PROSSIME ASSUNZIONI",
+                        testo = stringResource(R.string.home_sezione_prossime_assunzioni),
                         numero = uiState.prossimeAssunzioni.size,
                         icon = Icons.AutoMirrored.Filled.ArrowForward
                     )
@@ -400,9 +406,10 @@ fun IntestazioneHome(
     val dataFormattata = remember(oggi) {
         oggi.format(formatterData).replaceFirstChar { it.uppercase() }
     }
-    val testoSaluto = remember(ora, nomeUtente) {
-        if (!nomeUtente.isNullOrBlank()) "${saluto(ora)}, $nomeUtente" else saluto(ora)
-    }
+    // saluto() è @Composable (chiama stringResource): va invocata qui, non dentro
+    // remember{} (che vieta chiamate composable), quindi risolta prima e poi concatenata.
+    val salutoBase = saluto(ora)
+    val testoSaluto = if (!nomeUtente.isNullOrBlank()) "$salutoBase, $nomeUtente" else salutoBase
 
     Row(
         modifier = Modifier
@@ -441,26 +448,28 @@ fun IntestazioneHome(
             Icon(
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 imageVector = Icons.Default.AccountCircle,
-                contentDescription = "Account"
+                contentDescription = stringResource(R.string.home_account_content_description)
             )
         }
     }
 }
 
+@Composable
 private fun saluto(ora: LocalTime): String = when (ora.hour) {
-    in 5..11 -> "Buongiorno"
-    in 12..17 -> "Buon pomeriggio"
-    else -> "Buonasera"
+    in 5..11 -> stringResource(R.string.home_saluto_buongiorno)
+    in 12..17 -> stringResource(R.string.home_saluto_buon_pomeriggio)
+    else -> stringResource(R.string.home_saluto_buonasera)
 }
 
+@Composable
 private fun formattaDurata(minuti: Long): String {
     val m = minuti.coerceAtLeast(0)
     val ore = m / 60
     val min = m % 60
     return when {
-        ore == 0L -> "$min min"
-        min == 0L -> "${ore}h"
-        else -> "${ore}h ${min}min"
+        ore == 0L -> stringResource(R.string.home_durata_minuti, min)
+        min == 0L -> stringResource(R.string.home_durata_ore, ore)
+        else -> stringResource(R.string.home_durata_ore_minuti, ore, min)
     }
 }
 
@@ -487,7 +496,7 @@ private fun BarraAderenza(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Assunzioni di oggi",
+                text = stringResource(R.string.home_barra_aderenza_titolo),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -529,13 +538,13 @@ private fun AzioniRapide(
         AzioneRapida(
             modifier = Modifier.weight(1f),
             icon = Icons.Default.DateRange,
-            text = "Frequenza",
+            text = stringResource(R.string.home_azione_frequenza),
             onClick = onFrequenzaClick
         )
         AzioneRapida(
             modifier = Modifier.weight(1f),
             icon = Icons.AutoMirrored.Filled.List,
-            text = "Medicinali",
+            text = stringResource(R.string.home_azione_medicinali),
             onClick = onMedicinaliClick
         )
 //        AzioneRapida(
@@ -814,12 +823,13 @@ private fun ProssimaAssunzioneCard(
                                         dimensione = 40.dp
                                     )
                                     EtichettaStato(
-                                        testo = "PROSSIMA ASSUNZIONE",
+                                        testo = stringResource(R.string.home_etichetta_prossima_assunzione),
                                         color = contentColor.copy(alpha = 0.7f)
                                     )
                                 }
                                 ChipCountdown(
-                                    testo = if (puoAssumereOra) "Ora" else "tra ${formattaDurata(minutiAllaProssima ?: 0)}",
+                                    testo = if (puoAssumereOra) stringResource(R.string.home_countdown_ora)
+                                    else stringResource(R.string.home_countdown_tra, formattaDurata(minutiAllaProssima ?: 0)),
                                     evidenziato = puoAssumereOra,
                                     contentColor = contentColor
                                 )
@@ -891,7 +901,8 @@ private fun ProssimaAssunzioneCard(
                                             )
                                             Spacer(Modifier.width(8.dp))
                                             Text(
-                                                text = if (puoAssumereOra) "Assumi" else "Assumi in anticipo",
+                                                text = if (puoAssumereOra) stringResource(R.string.home_bottone_assumi)
+                                                else stringResource(R.string.common_assumi_in_anticipo),
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
@@ -919,12 +930,12 @@ private fun ProssimaAssunzioneCard(
                                         dimensione = 32.dp
                                     )
                                     EtichettaStato(
-                                        testo = "IN RITARDO",
+                                        testo = stringResource(R.string.home_sezione_in_ritardo),
                                         color = contentColor.copy(alpha = 0.85f)
                                     )
                                 }
                                 ChipCountdown(
-                                    testo = "in ritardo da ${formattaDurata(minutiRitardo ?: 0)}",
+                                    testo = stringResource(R.string.home_countdown_in_ritardo_da, formattaDurata(minutiRitardo ?: 0)),
                                     evidenziato = true,
                                     contentColor = contentColor
                                 )
@@ -975,7 +986,7 @@ private fun ProssimaAssunzioneCard(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         TextButton(onClick = { showDialogPuntuale = true }) {
-                                            Text("Presa puntualmente")
+                                            Text(stringResource(R.string.common_presa_puntualmente))
                                         }
                                         Box {
                                             Button(
@@ -996,7 +1007,7 @@ private fun ProssimaAssunzioneCard(
                                                 )
                                                 Spacer(Modifier.width(8.dp))
                                                 Text(
-                                                    text = "Assumi in ritardo",
+                                                    text = stringResource(R.string.common_assumi_in_ritardo),
                                                     fontWeight = FontWeight.Bold
                                                 )
                                             }
@@ -1012,16 +1023,16 @@ private fun ProssimaAssunzioneCard(
                         Image(
                             modifier = Modifier.size(64.dp),
                             painter = painterResource(id = R.drawable.listcompleted),
-                            contentDescription = "Lista medicine completate"
+                            contentDescription = stringResource(R.string.home_completato_content_description)
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "Tutto fatto per oggi",
+                            text = stringResource(R.string.home_completato_titolo),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Hai assunto $assunteOggi/$totaliOggi medicine previste",
+                            text = stringResource(R.string.home_completato_sottotitolo, assunteOggi, totaliOggi),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = contentColor.copy(alpha = 0.8f)
@@ -1030,13 +1041,13 @@ private fun ProssimaAssunzioneCard(
 
                     else -> { // vuoto / nessuna assunzione oggi
                         Text(
-                            text = "Nessuna assunzione in programma",
+                            text = stringResource(R.string.home_vuoto_titolo),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (medicinaleExist) "Nessuno tra i tuoi medicinali attivi è programmato per oggi"
-                            else "Abilita o aggiungi un medicinale per iniziare a tenere traccia delle tue assunzioni",
+                            text = if (medicinaleExist) stringResource(R.string.home_vuoto_sottotitolo_medicinale_esistente)
+                            else stringResource(R.string.home_vuoto_sottotitolo_nessun_medicinale),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                             color = contentColor.copy(alpha = 0.8f)
@@ -1251,7 +1262,7 @@ private fun CheckmarkConfermato() {
     ) {
         Icon(
             imageVector = Icons.Default.Check,
-            contentDescription = "Assunta",
+            contentDescription = stringResource(R.string.home_checkmark_content_description),
             tint = MaterialTheme.colorScheme.onPrimary
         )
     }
@@ -1265,15 +1276,15 @@ private fun ConfermaAnticipoDialog(
 ) {
     AlertDialog(
         onDismissRequest = onAnnulla,
-        title = { Text("Assumere in anticipo?") },
+        title = { Text(stringResource(R.string.home_dialog_anticipo_titolo)) },
         text = {
-            Text("Non è ancora l'orario previsto per $nomeMedicinale. Vuoi assumerla comunque adesso?")
+            Text(stringResource(R.string.home_dialog_anticipo_testo, nomeMedicinale))
         },
         confirmButton = {
-            TextButton(onClick = onConferma) { Text("Assumi in anticipo") }
+            TextButton(onClick = onConferma) { Text(stringResource(R.string.common_assumi_in_anticipo)) }
         },
         dismissButton = {
-            TextButton(onClick = onAnnulla) { Text("Annulla") }
+            TextButton(onClick = onAnnulla) { Text(stringResource(R.string.common_annulla)) }
         }
     )
 }
@@ -1290,15 +1301,15 @@ private fun ConfermaPresaPuntualeDialog(
     }
     AlertDialog(
         onDismissRequest = onAnnulla,
-        title = { Text("Confermare l'assunzione puntuale?") },
+        title = { Text(stringResource(R.string.home_dialog_puntuale_titolo)) },
         text = {
-            Text("$nomeMedicinale verrà segnata come assunta alle $orarioFormattato, l'orario previsto, invece che ora.")
+            Text(stringResource(R.string.home_dialog_puntuale_testo, nomeMedicinale, orarioFormattato))
         },
         confirmButton = {
-            TextButton(onClick = onConferma) { Text("Conferma") }
+            TextButton(onClick = onConferma) { Text(stringResource(R.string.common_conferma)) }
         },
         dismissButton = {
-            TextButton(onClick = onAnnulla) { Text("Annulla") }
+            TextButton(onClick = onAnnulla) { Text(stringResource(R.string.common_annulla)) }
         }
     )
 }
@@ -1386,11 +1397,12 @@ private fun AssunzioneRitardataCard(
                             fontSize = 16.sp
                         )
                         Text(
-                            text = "Prevista per le ${
+                            text = stringResource(
+                                R.string.home_ritardata_prevista_per,
                                 assunzione.assunzionePrevista.orarioPrevisto.format(
                                     DateTimeFormatter.ofPattern("HH:mm")
                                 )
-                            }",
+                            ),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -1415,7 +1427,7 @@ private fun AssunzioneRitardataCard(
                                 ),
                                 onClick = { mostraDialogPuntuale = true }
                             ) {
-                                Text("Presa puntualmente")
+                                Text(stringResource(R.string.common_presa_puntualmente))
                             }
                             // Niente dialog qui: la medicina è già saltata, la conferma
                             // dell'orario è già passata, non serve chiedere ulteriore conferma.
@@ -1429,7 +1441,7 @@ private fun AssunzioneRitardataCard(
                                     disabledContainerColor = Color.White
                                 )
                             ) {
-                                Text("Assumi in ritardo")
+                                Text(stringResource(R.string.common_assumi_in_ritardo))
                             }
                         }
                     }
@@ -1517,7 +1529,7 @@ private fun ProssimaInCodaCard(
                         CheckmarkConfermato()
                     } else {
                         OutlinedButton(onClick = { showDialog = true }, shape = RoundedCornerShape(50)) {
-                            Text("Assumi in anticipo")
+                            Text(stringResource(R.string.common_assumi_in_anticipo))
                         }
                     }
                 }
