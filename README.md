@@ -44,13 +44,11 @@ even if the medication is later edited, paused, or deleted.
   or late, with animated confirmations.
 
 ## 📸 Screenshots
-
-|                        Home                        |                    Medications                     |
-|:--------------------------------------------------:|:--------------------------------------------------:|
-|        ![Home](screenshots/home_screen.png)        | ![Medications](screenshots/medications_screen.png) |
-|                     Frequency                      |                   Add medication                   |
-| :------------------------------------------------: | :------------------------------------------------: |
-|   ![Frequency](screenshots/frequency_screen.png)   |       ![Add](screenshots/new_medication.png)       |
+|                           Home                            |                         Medications                         |
+|:---------------------------------------------------------:|:-----------------------------------------------------------:|
+|   <img src="screenshots/home_screen.png" width="250"/>    | <img src="screenshots/medications_screen.png" width="250"/> |
+|                         Frequency                         |                       Add medication                        |
+| <img src="screenshots/frequency_screen.png" width="250"/> |   <img src="screenshots/new_medication.png" width="250"/>   |
 
 ## 🏗️ Architecture
 
