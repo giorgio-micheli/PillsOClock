@@ -44,12 +44,11 @@ even if the medication is later edited, paused, or deleted.
   or late, with animated confirmations.
 
 ## 📸 Screenshots
-|                           Home                            |                         Medications                         |
-|:---------------------------------------------------------:|:-----------------------------------------------------------:|
-|   <img src="screenshots/home_screen.png" width="250"/>    | <img src="screenshots/medications_screen.png" width="250"/> |
-|                         Frequency                         |                       Add medication                        |
-| <img src="screenshots/frequency_screen.png" width="250"/> |   <img src="screenshots/new_medication.png" width="250"/>   |
-
+|                                      Home                                       |                                    Medications                                    |
+|:-------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------:|
+|   <p align="center"><img src="screenshots/home_screen.png" width="250"/></p>    | <p align="center"><img src="screenshots/medications_screen.png" width="250"/></p> |
+|                                    Frequency                                    |                                  Add medication                                   |
+| <p align="center"><img src="screenshots/frequency_screen.png" width="250"/></p> |   <p align="center"><img src="screenshots/new_medication.png" width="250"/></p>   |
 ## 🏗️ Architecture
 
 Layered architecture with a clean separation between domain and
