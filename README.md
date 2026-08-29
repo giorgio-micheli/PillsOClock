@@ -45,9 +45,12 @@ even if the medication is later edited, paused, or deleted.
 
 ## 📸 Screenshots
 
-|                 Home                 |                    Medications                     |                   Frequency                    |             Add medication             |
-|:------------------------------------:|:--------------------------------------------------:|:----------------------------------------------:|:--------------------------------------:|
-| ![Home](screenshots/home_screen.png) | ![Medications](screenshots/medications_screen.png) | ![Frequency](screenshots/frequency_screen.png) | ![Add](screenshots/new_medication.png) |
+|                        Home                        |                    Medications                     |
+|:--------------------------------------------------:|:--------------------------------------------------:|
+|        ![Home](screenshots/home_screen.png)        | ![Medications](screenshots/medications_screen.png) |
+|                     Frequency                      |                   Add medication                   |
+| :------------------------------------------------: | :------------------------------------------------: |
+|   ![Frequency](screenshots/frequency_screen.png)   |       ![Add](screenshots/new_medication.png)       |
 
 ## 🏗️ Architecture
 
