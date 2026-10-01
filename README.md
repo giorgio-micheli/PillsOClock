@@ -44,11 +44,8 @@ even if the medication is later edited, paused, or deleted.
   or late, with animated confirmations.
 
 ## 📸 Screenshots
-|                                      Home                                       |                                    Medications                                    |
-|:-------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------:|
-|   <p align="center"><img src="screenshots/home_screen.png" width="250"/></p>    | <p align="center"><img src="screenshots/medications_screen.png" width="250"/></p> |
-|                                    Frequency                                    |                                  Add medication                                   |
-| <p align="center"><img src="screenshots/frequency_screen.png" width="250"/></p> |   <p align="center"><img src="screenshots/new_medication.png" width="250"/></p>   |
+![](screenshots/sample.png)
+
 ## 🏗️ Architecture
 
 Layered architecture with a clean separation between domain and
