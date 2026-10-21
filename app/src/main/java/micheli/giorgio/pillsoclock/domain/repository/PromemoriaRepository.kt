@@ -16,4 +16,10 @@ interface PromemoriaRepository {
     fun cancella(idAssunzionePrevista: Int)
 
     fun puoPianificareAllarmiEsatti(): Boolean
+
+    /**
+     * Pianifica (o ripianifica) l'allarme di mezzanotte che genera le
+     * assunzioni del nuovo giorno e i relativi promemoria.
+     */
+    fun pianificaGenerazioneMezzanotte()
 }

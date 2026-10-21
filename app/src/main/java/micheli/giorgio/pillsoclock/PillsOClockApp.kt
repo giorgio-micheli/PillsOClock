@@ -115,6 +115,9 @@ class PillsOClockApp : Application(), Configuration.Provider {
         super.onCreate()
         createNotificationChannel()
         inizializzaUtente()
+        // Allarme esatto di mezzanotte: il periodic work qui sotto resta solo come
+        // rete di sicurezza, perché di notte in Doze verrebbe rimandato anche di ore
+        promemoriaRepository.pianificaGenerazioneMezzanotte()
         pianificaGenerazioneGiornaliera()
         eseguiGenerazioneImmediata()
     }
