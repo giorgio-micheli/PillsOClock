@@ -1486,12 +1486,12 @@ private fun ProssimaInCodaCard(
             ),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.SpaceEvenly,
+                horizontalAlignment = Alignment.Start
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1524,11 +1524,14 @@ private fun ProssimaInCodaCard(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
                 AnimatedContent(targetState = isConfirming, label = "assumi_in_anticipo") { inCorso ->
                     if (inCorso) {
                         CheckmarkConfermato()
                     } else {
-                        OutlinedButton(onClick = { showDialog = true }, shape = RoundedCornerShape(50)) {
+                        OutlinedButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { showDialog = true }, shape = RoundedCornerShape(50)) {
                             Text(stringResource(R.string.common_assumi_in_anticipo))
                         }
                     }
