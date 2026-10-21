@@ -1470,18 +1470,37 @@ private fun ProssimaInCodaCard(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
+    // Stessa famiglia verde acqua della card principale, ma molto più
+    // smorzata (primaryContainer appena miscelato sulla superficie): le dosi
+    // in coda sono nel futuro e non devono competere con quella in primo piano.
+    val superficie = MaterialTheme.colorScheme.surfaceContainerLow
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val primary = MaterialTheme.colorScheme.primary
+    val brushSfondo = remember(superficie, primaryContainer) {
+        Brush.linearGradient(
+            listOf(
+                lerp(superficie, primaryContainer, 0.12f),
+                lerp(superficie, primaryContainer, 0.26f)
+            )
+        )
+    }
+    val brushBordo = remember(primary) {
+        Brush.verticalGradient(listOf(primary.copy(alpha = 0.30f), primary.copy(alpha = 0.05f)))
+    }
+
     CardConAnimazioneAssunzione { isConfirming, avviaConferma ->
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(
-                    elevation = 3.dp,
+                    elevation = 4.dp,
                     shape = RoundedCornerShape(20.dp),
-                    spotColor = MaterialTheme.colorScheme.secondaryContainer
+                    ambientColor = primary,
+                    spotColor = primary
                 ),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
             elevation = CardDefaults.cardElevation(0.dp)
@@ -1489,6 +1508,8 @@ private fun ProssimaInCodaCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .background(brushSfondo)
+                    .border(width = 1.dp, brush = brushBordo, shape = RoundedCornerShape(20.dp))
                     .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceEvenly,
                 horizontalAlignment = Alignment.Start
@@ -1520,7 +1541,8 @@ private fun ProssimaInCodaCard(
                                     )
                                 )
                             },
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -1531,7 +1553,14 @@ private fun ProssimaInCodaCard(
                     } else {
                         OutlinedButton(
                             modifier = Modifier.fillMaxWidth(),
-                            onClick = { showDialog = true }, shape = RoundedCornerShape(50)) {
+                            onClick = { showDialog = true },
+                            shape = RoundedCornerShape(50),
+                            border = BorderStroke(1.dp, primary.copy(alpha = 0.5f)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                                contentColor = primary
+                            )
+                        ) {
                             Text(stringResource(R.string.common_assumi_in_anticipo))
                         }
                     }
